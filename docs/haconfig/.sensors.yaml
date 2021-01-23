@@ -1,0 +1,81 @@
+# Consumption
+- platform: mqtt
+  name: "VMC Power Current"
+  state_topic: "comfoair/power_consumption_current"
+  unit_of_measurement: W
+- platform: mqtt
+  name: "VMC Total Energy Saving"
+  state_topic: "comfoair/ah_ytd"
+  unit_of_measurement: Wh
+
+# FAns
+
+- platform: mqtt
+  name: "VMC Exhaust Fan Speed"
+  state_topic: "comfoair/exhaust_fan_speed"
+  unit_of_measurement: rpm
+- platform: mqtt
+  name: "VMC Supply Fan Speed"
+  state_topic: "comfoair/supply_fan_speed"
+  unit_of_measurement: rpm
+- platform: mqtt
+  name: "VMC Exhaust Fan Duty"
+  state_topic: "comfoair/exhaust_fan_duty"
+  unit_of_measurement: rpm
+- platform: mqtt
+  name: "VMC Supply Fan Duty"
+  state_topic: "comfoair/supply_fan_duty"
+  unit_of_measurement: rpm
+- platform: mqtt
+  name: "VMC Supply Fan User Speed"
+  state_topic: "comfoair/fan_speed"
+
+  # FLOW
+- platform: mqtt
+  name: "VMC Exhaust Fan Flow"
+  state_topic: "comfoair/exhaust_fan_flow"
+  unit_of_measurement: "m³/h"
+- platform: mqtt
+  name: "VMC Supply Fan Flow"
+  state_topic: "comfoair/supply_fan_flow"
+  unit_of_measurement: "m³/h"
+
+# TEMPS
+- platform: mqtt
+  name: "VMC Outdoor Air Temperature"
+  state_topic: "comfoair/outdoor_air_temp"
+  unit_of_measurement: "°C"
+- platform: mqtt
+  name: "VMC Exhaust Air Temperature"
+  state_topic: "comfoair/exhaust_air_temp"
+  unit_of_measurement: "°C"
+- platform: mqtt
+  name: "VMC Extract Air Temperature"
+  state_topic: "comfoair/extract_air_temp"
+  unit_of_measurement: "°C"
+- platform: mqtt
+  name: "VMC Post Heater Temp Before"
+  state_topic: "comfoair/post_heater_temp_before"
+  unit_of_measurement: "°C"
+- platform: mqtt
+  name: "VMC Post Heater Temp After"
+  state_topic: "comfoair/post_heater_temp_after"
+  unit_of_measurement: "°C"
+
+# Humidity
+- platform: mqtt
+  name: "VMC Outdoor Air Humidity"
+  state_topic: "comfoair/outdoor_air_humidity"
+  unit_of_measurement: "%"
+- platform: mqtt
+  name: "VMC Exhaust Air Humidity"
+  state_topic: "comfoair/exhaust_air_humidity"
+  unit_of_measurement: "%"
+- platform: mqtt
+  name: "VMC Extract Air Humidity"
+  state_topic: "comfoair/extract_air_humidity"
+  unit_of_measurement: "%"
+- platform: mqtt
+  name: "VMC Supply Air Humidity"
+  state_topic: "comfoair/supply_air_humidity"
+  unit_of_measurement: "%"

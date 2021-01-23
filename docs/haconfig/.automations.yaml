@@ -1,0 +1,59 @@
+- alias: VMC a 1 di notte
+  description: ''
+  trigger:
+    - at: 00:00:00
+      platform: time
+  condition: []
+  action:
+    -
+      service: mqtt.publish
+      data:
+        topic: comfoair/commands/ventilation_level_1
+        payload: on
+
+# Two way update. USER SPEED
+- alias: "[VMC] Auto Update user fan speed from MQTT"
+  trigger:
+    platform: mqtt
+    topic: "comfoair/fan_speed"
+  action:
+    -
+      service: input_select.select_option
+      data:
+        entity_id: input_select.vmc_user_fan_speed
+        option: "{{ trigger.payload }}"
+
+- alias: "[VMC] Set user fan speed on VMC from input select"
+  trigger:
+    platform: state
+    entity_id: input_select.vmc_user_fan_speed
+  action:
+    -
+      service: mqtt.publish
+      data:
+        topic: comfoair/commands/ventilation_level
+        payload: "{{ states('input_select.vmc_user_fan_speed') }}"
+
+
+# Two way update. Operating Mode
+- alias: "[VMC] Auto Update user operation mode from MQTT"
+  trigger:
+    platform: mqtt
+    topic: "comfoair/operating_mode"
+  action:
+    -
+      service: input_select.select_option
+      data:
+        entity_id: input_select.vmc_operating_mode
+        option: "{{ 'manual' if trigger.payload != 'auto' else 'auto'}}"
+
+- alias: "[VMC] Set user operating mode on VMC from input select"
+  trigger:
+    platform: state
+    entity_id: input_select.vmc_operating_mode
+  action:
+    -
+      service: mqtt.publish
+      data:
+        topic: comfoair/commands/set_mode
+        payload: "{{ states('input_select.vmc_operating_mode') }}"

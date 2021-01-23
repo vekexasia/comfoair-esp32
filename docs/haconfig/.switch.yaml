@@ -1,0 +1,27 @@
+- platform: template
+  switches:
+    vmc_supply_ventilation:
+      value_template: "{{ states('sensor.vmc_supply_fan_duty') | int > 0 }}"
+      turn_on:
+        service: mqtt.publish
+        data:
+          topic: comfoair/commands/ventilation_extract_only_reset
+          payload: ':)'
+      turn_off:
+        service: mqtt.publish
+        data:
+          topic: comfoair/commands/ventilation_extract_only
+          payload: ':)'
+
+    vmc_extract_ventilation:
+      value_template: "{{ states('sensor.vmc_exhaust_fan_duty') | int > 0 }}"
+      turn_on:
+        service: mqtt.publish
+        data:
+          topic: comfoair/commands/ventilation_supply_only_reset
+          payload: ':)'
+      turn_off:
+        service: mqtt.publish
+        data:
+          topic: comfoair/commands/ventilation_supply_only
+          payload: ':)'
