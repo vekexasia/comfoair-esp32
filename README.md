@@ -25,16 +25,20 @@ Prerequisites:
 ## How
 
 1.  Buy Type B cabled Some ethernet Cable:
-  1. Cut the cable and use 
+
+  2. Cut the cable and use 
+
     * RJ45 White/Brown -> black in VMC
     * RJ45 Brown -> Red in VMC
     * RJ45 green  -> white in VMC (CAN_L)
     * RJ45 orange -> yellow in VMC (CAN_H)
 2. Cable RJ45 Female 
+
   * Green and Orange to CAN_L and CAN_H of transceiver
   * Whtie/Brown to DC-DC `IN-`
   * Brown to  DC-DC `IN+`
 3. Connect trasceiver
+
   * rx and tx to pin 4 and 5 of esp32. 
   * gnd + vcc to DC-DC OUT pins
 4. Connect ESP32 to DC-DC out pins and transceiver (as prev step).
