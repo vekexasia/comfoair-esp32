@@ -42,7 +42,7 @@ Prerequisites:
   * rx and tx to pin 4 and 5 of esp32. 
   * gnd + vcc to DC-DC OUT pins
 4. Connect ESP32 to DC-DC out pins and transceiver (as prev step).
-5. Print the STL provided in `docs/` folder
+5. Print the Fusion 3D file provided in `docs/3d` folder
 
 The end result should look like this:
 ![Comfoair Q 350 3D Print](docs/pic.jpg?raw=true "Comfoair Q 350 3D Print")
