@@ -1,7 +1,7 @@
-#include "comfoair.h";
-#include "commands.h";
-#include "../mqtt/mqtt.h";
-#include "../secrets.h";
+#include "comfoair.h"
+#include "commands.h"
+#include "../mqtt/mqtt.h"
+#include "../secrets.h"
 #include <esp32_can.h>
 
 
@@ -18,8 +18,8 @@ void printFrame2(CAN_FRAME *message)
   Serial.println();
 }
 #define subscribe(command) mqtt->subscribeTo(MQTT_PREFIX "/commands/" command, [this](char const * _1,uint8_t const * _2, int _3) { \
-    Serial.print("Received: "); \ 
-    Serial.println(command); \ 
+    Serial.print("Received: "); \
+    Serial.println(command); \
     this->comfoMessage.sendCommand(command); \
   });
 extern comfoair::MQTT *mqtt;
