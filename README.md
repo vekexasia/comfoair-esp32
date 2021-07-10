@@ -39,7 +39,8 @@ Prerequisites:
   * Brown to  DC-DC `IN+`
 3. Connect trasceiver
 
-  * rx and tx to pin 4 and 5 of esp32. 
+  * can_rx -> pin 5 of esp32
+  * can_tx -> pin 4 of esp32 
   * gnd + vcc to DC-DC OUT pins
 4. Connect ESP32 to DC-DC out pins and transceiver (as prev step).
 5. Print the Fusion 3D file provided in `docs/3d` folder
