@@ -139,10 +139,12 @@ namespace comfoair {
                                                   sprintf(message->val, format, transformation); \
                                                   return true;
 
+// For documentation on PDOID's see: https://github.com/michaelarnauts/comfoconnect/blob/master/PROTOCOL-PDO.md
     switch (PDOID) {
       LAZYSWITCH(16, "away_indicator", "%s", vals[0] == 0x07 ? "true" : "false")
-      LAZYSWITCH(49, "operating_mode", "%s", vals[0] == 1 ? "limited_manual": (vals[0] == 0xff ? "auto": "unlimited_manual"))  // 0 limited_manual, 1 = auto, 2 = unlimited_manual
+      LAZYSWITCH(49, "operating_mode", "%s", vals[0] == 1 ? "limited_manual": (vals[0] == 0xff ? "auto": "unlimited_manual"))  // 01 = limited_manual, FF = auto, 05 = unlimited_manual
       LAZYSWITCH(65, "fan_speed", "%d", vals[0])
+      LAZYSWITCH(66, "bypass_activation_mode", "%s", vals[0] == 0 ? "auto": (vals[0] == 1 ? "activated": "deactivated")) // 0 auto, 1 activated, 2 deactivated
       LAZYSWITCH(67, "temp_profile", "%d", vals[0])
       LAZYSWITCH(81, "next_fan_change", "%d", uint32)
 
@@ -171,15 +173,17 @@ namespace comfoair {
       LAZYSWITCH(217, "ac_ytd", "%d", uint16)  // wh
       LAZYSWITCH(218, "ac_total", "%d", uint16)  // wh   
       
-      LAZYSWITCH(221, "post_heater_temp_after", "%.1f", uint16/10.0)  // C°   
-      LAZYSWITCH(227, "bypass_state", "%s", vals[0] == 64 ? "on" : "off")  // 1 = on, 0 = off   
+      LAZYSWITCH(227, "bypass_state", "%d", vals[0])  // %
 
       // temps
       LAZYSWITCH(209, "rmot", "%.1f", uint16/ 10.0)  // C°
       LAZYSWITCH(212, "target_temp", "%.1f", uint16/ 10.0)  // C°
+      LAZYSWITCH(220, "pre_heater_temp_before", "%.1f", uint16/10.0) // C°
+      LAZYSWITCH(221, "post_heater_temp_after", "%.1f", uint16/10.0)  // C°
       LAZYSWITCH(274, "extract_air_temp", "%.1f", int16 /10.0)  // C°   
       LAZYSWITCH(275, "exhaust_air_temp", "%.1f", int16 /10.0)  // C°   
       LAZYSWITCH(276, "outdoor_air_temp", "%.1f", int16 /10.0)  // C°   
+      LAZYSWITCH(277, "pre_heater_temp_after", "%.1f", int16 /10.0)  // C°
       LAZYSWITCH(278, "post_heater_temp_before", "%.1f", int16 /10.0)  // C°   
       // Humidity
       LAZYSWITCH(290, "extract_air_humidity", "%d", vals[0])  // %
