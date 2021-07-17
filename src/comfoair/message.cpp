@@ -145,8 +145,9 @@ namespace comfoair {
       LAZYSWITCH(49, "operating_mode", "%s", vals[0] == 1 ? "limited_manual": (vals[0] == 0xff ? "auto": "unlimited_manual"))  // 01 = limited_manual, FF = auto, 05 = unlimited_manual
       LAZYSWITCH(65, "fan_speed", "%d", vals[0])
       LAZYSWITCH(66, "bypass_activation_mode", "%s", vals[0] == 0 ? "auto": (vals[0] == 1 ? "activated": "deactivated")) // 0 auto, 1 activated, 2 deactivated
-      LAZYSWITCH(67, "temp_profile", "%d", vals[0])
+      LAZYSWITCH(67, "temp_profile", "%s", vals[0] == 0 ? "auto": (vals[0] == 1 ? "cold": "warm")) // 0 auto, 1 cold, 2 warm
       LAZYSWITCH(81, "next_fan_change", "%d", uint32)
+      LAZYSWITCH(82, "next_bypass_change", "%d", uint32)
 
       // Fans
       LAZYSWITCH(117, "exhaust_fan_duty", "%d", vals[0]) // %
@@ -189,6 +190,7 @@ namespace comfoair {
       LAZYSWITCH(290, "extract_air_humidity", "%d", vals[0])  // %
       LAZYSWITCH(291, "exhaust_air_humidity", "%d", vals[0])  // %   
       LAZYSWITCH(292, "outdoor_air_humidity", "%d", vals[0])  // %   
+      LAZYSWITCH(293, "pre_heater_humidity_after", "%d", vals[0]) // %
       LAZYSWITCH(294, "supply_air_humidity", "%d", vals[0])  // %   
       default: 
         return false;
