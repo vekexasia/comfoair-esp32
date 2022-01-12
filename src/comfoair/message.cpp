@@ -86,6 +86,9 @@ namespace comfoair {
     this->test("004480412D100", "extract_air_temp", "20.9");
     this->test("0044C04123700", "exhaust_air_temp", "5.5");
     this->test("0045004120900", "outdoor_air_temp", "0.9");
+    this->test("004500412FFFF", "outdoor_air_temp", "-0.1");
+    this->test("004500412FFA1", "outdoor_air_temp", "-9.5");
+    this->test("004500412FEB3", "outdoor_air_temp", "-33.3");
     this->test("004580412C700", "post_heater_temp_before", "19.9");
     this->test("0048804112D", "extract_air_humidity", "45");
     this->test("00488041129", "extract_air_humidity", "41");
@@ -132,7 +135,7 @@ namespace comfoair {
     uint16_t PDOID = (frame->id & 0x00fff000) >> 14;
     uint8_t *vals = &frame->data.uint8[0];
     #define uint16 (vals[0] + (vals[1]<<8))
-    #define int16 (vals[0] + (vals[1]<<8))
+    #define int16 (vals[1] < 0x80 ? (vals[0] + (vals[1] << 8)) : - ((vals[0] ^ 0xFF) + ((vals[1] ^ 0xFF) << 8) + 1))
     #define uint32 (uint16 + ((vals[2] + (vals[3]<<8))<<16))
     #define LAZYSWITCH(id, key, format, transformation) case id: \
                                                   strcpy(message->name, key); \
