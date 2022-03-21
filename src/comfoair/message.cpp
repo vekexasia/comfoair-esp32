@@ -128,6 +128,7 @@ namespace comfoair {
     CMDIF(ventilation_extract_only_reset)
     CMDIF(temp_profile_normal)
     CMDIF(temp_profile_cool)
+    CMDIF(temp_profile_warm)
     return false;
   }
 
