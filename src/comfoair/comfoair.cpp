@@ -59,6 +59,7 @@ namespace comfoair {
     subscribe("ventilation_extract_only_reset");
     subscribe("temp_profile_normal");
     subscribe("temp_profile_cool");
+	subscribe("temp_profile_warm");
 
     mqtt->subscribeTo(MQTT_PREFIX "/commands/" "ventilation_level", [this](char const * _1,uint8_t const * _2, int _3) {
       sprintf(otherBuf, "ventilation_level_%d", _2[0] - 48);
