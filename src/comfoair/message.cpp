@@ -133,7 +133,7 @@ namespace comfoair {
   }
 
   bool ComfoMessage::decode(CAN_FRAME *frame, DecodedMessage *message) {
-    uint16_t PDOID = (frame->id & 0x00fff000) >> 14;
+    uint16_t PDOID = (frame->id & 0x01fff000) >> 14;
     uint8_t *vals = &frame->data.uint8[0];
     #define uint16 (vals[0] + (vals[1]<<8))
     #define int16 (vals[1] < 0x80 ? (vals[0] + (vals[1] << 8)) : - ((vals[0] ^ 0xFF) + ((vals[1] ^ 0xFF) << 8) + 1))
