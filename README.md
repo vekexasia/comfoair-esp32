@@ -1,3 +1,8 @@
+# HEADS UP
+
+Check issue https://github.com/vekexasia/comfoair-esp32/issues/46 about the project direction and future changes to this repo.
+
+
 # Comfoair Q 350 MQTT bridge
 
 This software script let you use a ESP32 + CAN Transceiver to interact with the Comfoair Q 350 unit.
