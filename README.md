@@ -1,24 +1,30 @@
-# HEADS UP
+# Looking MQTT Version?
 
-Check issue https://github.com/vekexasia/comfoair-esp32/issues/46 about the project direction and future changes to this repo.
+If you need to install the MQTT version just browse this repo with tag mqtt.
 
-
-# Comfoair Q 350 MQTT bridge
+# Comfoair Q 350 ESPHome bridge
 
 This software script let you use a ESP32 + CAN Transceiver to interact with the Comfoair Q 350 unit.
 
-It does expose all known informations through MQTT and let you control the air flow via MQTT as well.
+It does expose all known informations through ESPHOME and let you control the air flow via Home Assistant as well.
 
 It does allow you to integrate the unit on Home Assistant as depicted below:
 ![Comfoair Q 350 Home Assistant](docs/homeassistant.png?raw=true "Comfoair Q 350 Home Assistant")
 
-You can find the configuration YAML files in the `docs` folder.
 
-## Components
+## Custom PCB
 
-Provided you've the necessary hardware, you need to create the `.env` file based on the `.env-sample` file with the proper environment variables.
+Inside the [docs/pcb folder](docs/pcb) you can find both gerber file and BOM. Files are provided as is. It's up to you to check correctness of the info.
 
-Prerequisites:
+This repository is meant to be working with the custom pcb above. But you can always buy components separately such as [Waveshare SN65HVD230](https://www.banggood.com/Waveshare-SN65HVD230-CAN-Bus-Module-Communication-CAN-Bus-Transceiver-Development-Board-p-1693712.html?rmmds=myorder&cur_warehouse=CN) and a voltage regulator as well as an ESP32 of your choice and it will work.
+
+The pcb will look like this once soldered and mounted.
+
+![PCB](docs/pic.jpg?raw=true "Comfoair Q 350 3D Print")
+
+## DIY
+
+Prerequisites for custom build:
 
 * `ESP32` -> [link](https://amzn.to/3pe0XVP)
 * `DC-DC converter` -> [link](https://amzn.to/39ar22v)
@@ -27,31 +33,29 @@ Prerequisites:
 + Some ethernet cable
 
 
-## How
+Here a simple schematic. made by @mat3u
 
-1.  Buy Type B cabled Some ethernet Cable:
+```
+---------------+        +---------------+                 +-------------+
+(oran/red)12V  o--------o IN+      OUT+ o-----------------o VIN         |
+               |        |   [LM2596S]   |                 |             |
+(brown)   GND  o--------o IN-      OUT- o-----------------o GND         |
+               |        +---------------+                 |             |
+    [RJ45]     |                                          |   [ESP32]   |
+  [ComfoAir]   |                                          |             |
+               |        +-------------------------+       |             |
+(w/blue) CAN_L o--------o CAN_L               3v3 o-------o 3v3         |
+(blue)   CAN_H o--------o CAN_H               GND o-------o GND         |
+---------------+        |                         |       |             |
+                        |   [SN65HVD230]   CAN TX o-------o 25          |
+                        |                  CAN RX o-------o 21          |
+                        +-------------------------+       +-------------+
+``````
 
-  2. Cut the cable and use 
+## esphome conf
 
-    * RJ45 White/Brown -> black in VMC
-    * RJ45 Brown -> Red in VMC
-    * RJ45 green  -> white in VMC (CAN_L)
-    * RJ45 orange -> yellow in VMC (CAN_H)
-2. Cable RJ45 Female 
 
-  * Green and Orange to CAN_L and CAN_H of transceiver
-  * Whtie/Brown to DC-DC `IN-`
-  * Brown to  DC-DC `IN+`
-3. Connect trasceiver
 
-  * can_rx -> pin 5 of esp32
-  * can_tx -> pin 4 of esp32 
-  * gnd + vcc to DC-DC OUT pins
-4. Connect ESP32 to DC-DC out pins and transceiver (as prev step).
-5. Print the Fusion 3D file provided in `docs/3d` folder
-
-The end result should look like this:
-![Comfoair Q 350 3D Print](docs/pic.jpg?raw=true "Comfoair Q 350 3D Print")
 
 
 ## MQTT commands
