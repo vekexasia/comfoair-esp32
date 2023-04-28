@@ -1,6 +1,6 @@
 # Looking MQTT Version?
 
-If you need to install the MQTT version just browse this repo with tag mqtt.
+If you need to install the MQTT version just browse this repo with tag [last-mqtt](https://github.com/vekexasia/comfoair-esp32/tree/last-mqtt).
 
 # Comfoair Q 350 ESPHome bridge
 
