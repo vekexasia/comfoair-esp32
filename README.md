@@ -54,39 +54,60 @@ Here a simple schematic. made by @mat3u
 
 ## esphome conf
 
+To include this repo use the external_components configuration like so:
+
+```yaml
+# ...
+external_components:
+  - source: github://vekexasia/comfoair-esp32
+    components: [ comfoair ]
+
+comfoair:
+
+# ...
+```
 
 
+# Home Assistant Services
 
+The component exposes 2 services. 
 
-## MQTT commands
-The following commands are available. just issue whatever payload you want to `${prefix}/commands/${key}`
+ - comfoair_send_command
+ - comfoair_send_hex
 
-where `${key}` is: 
-  * ventilation_level_0
-  * ventilation_level_1
-  * ventilation_level_2
-  * ventilation_level_3
-  * boost_10_min
-  * boost_20_min
-  * boost_30_min
-  * boost_60_min
-  * boost_end
-  * auto
-  * manual
-  * bypass_activate_1h
-  * bypass_deactivate_1h
-  * bypass_auto
-  * ventilation_supply_only
-  * ventilation_supply_only_reset
-  * ventilation_extract_only
-  * ventilation_extract_only_reset
-  * ventilation_balance
-  * temp_profile_normal
-  * temp_profile_cool
-  * temp_profile_warm
+NOTE: the prefix could differ depending on your esphome device name.
 
-Along with these above you can also use the `ventilation_level` key with the string `0` or `1`, `2`, `3` to set the desired fan speed level.
-There is also `set_mode` which accepts `auto` or `manual` as payload.
+**comfoair_send_command**: allows one "command" parameter. The value of the param can be one of the following pre-bundled commands:
+
+ - ventilation_level_0
+ - ventilation_level_1
+ - ventilation_level_2
+ - ventilation_level_3
+ - boost_10_min
+ - boost_20_min
+ - boost_30_min
+ - boost_60_min
+ - boost_end
+ - auto
+ - manual
+ - bypass_activate_1h
+ - bypass_deactivate_1h
+ - bypass_auto
+ - ventilation_supply_only
+ - ventilation_supply_only_reset
+ - ventilation_extract_only
+ - ventilation_extract_only_reset
+ - temp_profile_normal
+ - temp_profile_cool
+ - temp_profile_warm
+
+In case you need more flexibility you can use the `comfoair_send_hex` service like follows:
+```
+service: esphome.comfoair_send_hex
+data:
+  hexSequence: "8415070100000000100e000000"
+```
+^^ the above is equivalent to ventilation_extract_only (which has an inner timer of 1h)
 
 
 ## Credits
