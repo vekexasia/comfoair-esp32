@@ -49,7 +49,7 @@ sensors = {
     "avoided_cooling_ytd":    {"unit": "Wh", "PDO": 217, "CONV": ComfoNumConvs.UINT16},
     "avoided_cooling_total":  {"unit": "Wh", "PDO": 218, "CONV": ComfoNumConvs.UINT16},
 
-    "bypass_state":  {"unit": "%", "PDO": 223, "CONV": ComfoNumConvs.UINT8},
+    "bypass_state":  {"unit": "%", "PDO": 227, "CONV": ComfoNumConvs.UINT8},
 
     # temps
     "rmot":                     {"unit": "°C", "PDO": 209, "CONV": ComfoNumConvs.INT16, "div": 10},
