@@ -2,7 +2,8 @@ import math
 import esphome.codegen as cg
 import esphome.cpp_generator as cppg
 import esphome.config_validation as cv
-from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT
+from esphome import pins
+from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN
 from esphome.components import text_sensor, binary_sensor, sensor
 from enum import Enum
 
@@ -120,6 +121,8 @@ GEN_TEXTSENSORS_SCHEMA = {
 CONFIG_SCHEMA = cv.All(
     cv.Schema({
         cv.GenerateID(): cv.declare_id(Comfoair),
+        cv.Required(CONF_RX_PIN): pins.internal_gpio_input_pin_number,
+        cv.Required(CONF_TX_PIN): pins.internal_gpio_output_pin_number,
     })
     .extend(GEN_SENSORS_SCHEMA)
     .extend(GEN_TEXTSENSORS_SCHEMA)
@@ -136,6 +139,8 @@ async def to_code(config):
 
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
+    cg.add(var.set_rx(config[CONF_RX_PIN]))
+    cg.add(var.set_tx(config[CONF_TX_PIN]))
     for key, value in sensors.items():
         sens = await sensor.new_sensor(config[key])
 

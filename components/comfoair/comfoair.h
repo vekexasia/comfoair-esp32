@@ -20,6 +20,8 @@ class ComfoSensor {
 
 class Comfoair: public Component, public esphome::api::CustomAPIDevice {
  public:
+  void set_rx(int rx) { rx_ = rx; }
+  void set_tx(int tx) { tx_ = tx; }
   void register_sensor(sensor::Sensor *obj, int PDOID, int conversionType, int divider) {
     ComfoSensor<sensor::Sensor, int> *cs = new ComfoSensor<sensor::Sensor, int>();
     cs->sensor = obj;
@@ -45,6 +47,8 @@ class Comfoair: public Component, public esphome::api::CustomAPIDevice {
   CAN_FRAME canMessage;
 
  protected:
+  int rx_{-1};
+  int tx_{-1};
   uint8_t sequence = 0;
   std::map<int, ComfoSensor<sensor::Sensor, int>> sensors;
   std::map<int, ComfoSensor<text_sensor::TextSensor,  std::string (*)(uint8_t *)>> textSensors;
