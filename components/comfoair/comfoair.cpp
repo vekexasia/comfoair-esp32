@@ -10,7 +10,7 @@ namespace comfoair {
 static const char *TAG = "comfoair.component";
 
 void Comfoair::setup(){
-    CAN0.setCANPins(GPIO_NUM_21, GPIO_NUM_25);
+    CAN0.setCANPins( (gpio_num_t) this->rx_, (gpio_num_t) this->tx_);
     CAN0.begin(50000);
     CAN0.watchFor();
     register_service(&Comfoair::send_command, "send_command", {"command"});
