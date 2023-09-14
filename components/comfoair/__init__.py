@@ -72,7 +72,9 @@ sensors = {
     "pre_heater_hum_after":   {"unit": "%", "PDO": 293, "CONV": ComfoNumConvs.UINT8},
     "supply_air_humidity":    {"unit": "%", "PDO": 294, "CONV": ComfoNumConvs.UINT8},
 
-
+    # summer/winter mode
+    "heating_season":   {"unit": "", "PDO": 210, "CONV": ComfoNumConvs.UINT8},
+    "cooling_season":   {"unit": "", "PDO": 211, "CONV": ComfoNumConvs.UINT8},
 
 
 }
