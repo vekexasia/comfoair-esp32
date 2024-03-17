@@ -76,6 +76,11 @@ sensors = {
     "heating_season":   {"unit": "", "PDO": 210, "CONV": ComfoNumConvs.UINT8},
     "cooling_season":   {"unit": "", "PDO": 211, "CONV": ComfoNumConvs.UINT8},
 
+    # analog ports
+    "analog_input_0_10v_1":   {"unit": "V", "PDO": 369, "CONV": ComfoNumConvs.INT16, "div": 10},
+    "analog_input_0_10v_2":   {"unit": "V", "PDO": 370, "CONV": ComfoNumConvs.INT16, "div": 10},
+    "analog_input_0_10v_3":   {"unit": "V", "PDO": 371, "CONV": ComfoNumConvs.INT16, "div": 10},
+    "analog_input_0_10v_4":   {"unit": "V", "PDO": 372, "CONV": ComfoNumConvs.INT16, "div": 10},
 
 }
 
