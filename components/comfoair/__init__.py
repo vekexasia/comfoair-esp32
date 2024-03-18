@@ -43,12 +43,12 @@ sensors = {
     "days_remaining_filter": {"unit": "days", "PDO": 192, "CONV": ComfoNumConvs.UINT16},
 
     "avoided_heating_actual": {"unit": "W", "PDO": 213, "CONV": ComfoNumConvs.UINT16, "div": 100},
-    "avoided_heating_ytd":    {"unit": "Wh", "PDO": 214, "CONV": ComfoNumConvs.UINT16},
-    "avoided_heating_total":  {"unit": "Wh", "PDO": 215, "CONV": ComfoNumConvs.UINT16},
+    "avoided_heating_ytd":    {"unit": "kWh", "PDO": 214, "CONV": ComfoNumConvs.UINT16},
+    "avoided_heating_total":  {"unit": "kWh", "PDO": 215, "CONV": ComfoNumConvs.UINT16},
 
     "avoided_cooling_actual": {"unit": "W", "PDO": 216, "CONV": ComfoNumConvs.UINT16, "div": 100},
-    "avoided_cooling_ytd":    {"unit": "Wh", "PDO": 217, "CONV": ComfoNumConvs.UINT16},
-    "avoided_cooling_total":  {"unit": "Wh", "PDO": 218, "CONV": ComfoNumConvs.UINT16},
+    "avoided_cooling_ytd":    {"unit": "kWh", "PDO": 217, "CONV": ComfoNumConvs.UINT16},
+    "avoided_cooling_total":  {"unit": "kWh", "PDO": 218, "CONV": ComfoNumConvs.UINT16},
 
     "bypass_state":  {"unit": "%", "PDO": 227, "CONV": ComfoNumConvs.UINT8},
 
