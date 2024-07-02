@@ -26,6 +26,8 @@ sensors = {
     "fan_speed":          {"unit": "", "PDO": 65, "CONV": ComfoNumConvs.UINT8},
     "next_fan_change":    {"unit": "s", "PDO": 81, "CONV": ComfoNumConvs.UINT32},
     "next_bypass_change": {"unit": "s", "PDO": 82, "CONV": ComfoNumConvs.UINT32},
+    "next_supply_change": {"unit": "s", "PDO": 86, "CONV": ComfoNumConvs.UINT32},
+    "next_exhaust_change": {"unit": "s", "PDO": 87, "CONV": ComfoNumConvs.UINT32},
 
 
 
@@ -107,6 +109,18 @@ return  vals[0] == 0 ? "auto": (vals[0] == 1 ? "activated": "deactivated");
         "PDO": 67,
         "code": '''
 return vals[0] == 0 ? "auto": (vals[0] == 1 ? "cold": "warm");
+'''
+    },
+    "supply_fan_mode": {
+        "PDO": 70,
+        "code": '''
+return vals[0] == -1 ? "balanced": "supplyonly";
+'''
+    },
+    "exhaust_fan_mode": {
+        "PDO": 71,
+        "code": '''
+return vals[0] == -1 ? "balanced": "exhaustonly";
 '''
     }
 
