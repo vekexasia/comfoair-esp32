@@ -1,16 +1,11 @@
-# Looking MQTT Version?
-
-If you need to install the MQTT version just browse this repo with tag [last-mqtt](https://github.com/vekexasia/comfoair-esp32/tree/last-mqtt).
-
 # Comfoair Q 350 ESPHome bridge
 
 This software script let you use a ESP32 + CAN Transceiver to interact with the Comfoair Q 350 unit.
 
-It does expose all known informations through ESPHOME and let you control the air flow via Home Assistant as well.
+It does expose all known informations of your Comfoair unit via ESPHOME and let you control the air flow via Home Assistant as well.
 
 It does allow you to integrate the unit on Home Assistant as depicted below:
 ![Comfoair Q 350 Home Assistant](docs/homeassistant.png?raw=true "Comfoair Q 350 Home Assistant")
-
 
 ## Custom PCB
 
@@ -70,36 +65,36 @@ comfoair:
 
 # Home Assistant Services
 
-The component exposes 2 services. 
+The component exposes 2 services.
 
- - comfoair_send_command
- - comfoair_send_hex
+- comfoair_send_command
+- comfoair_send_hex
 
 NOTE: the prefix could differ depending on your esphome device name.
 
 **comfoair_send_command**: allows one "command" parameter. The value of the param can be one of the following pre-bundled commands:
 
- - ventilation_level_0
- - ventilation_level_1
- - ventilation_level_2
- - ventilation_level_3
- - boost_10_min
- - boost_20_min
- - boost_30_min
- - boost_60_min
- - boost_end
- - auto
- - manual
- - bypass_activate_1h
- - bypass_deactivate_1h
- - bypass_auto
- - ventilation_supply_only
- - ventilation_supply_only_reset
- - ventilation_extract_only
- - ventilation_extract_only_reset
- - temp_profile_normal
- - temp_profile_cool
- - temp_profile_warm
+- ventilation_level_0
+- ventilation_level_1
+- ventilation_level_2
+- ventilation_level_3
+- boost_10_min
+- boost_20_min
+- boost_30_min
+- boost_60_min
+- boost_end
+- auto
+- manual
+- bypass_activate_1h
+- bypass_deactivate_1h
+- bypass_auto
+- ventilation_supply_only
+- ventilation_supply_only_reset
+- ventilation_extract_only
+- ventilation_extract_only_reset
+- temp_profile_normal
+- temp_profile_cool
+- temp_profile_warm
 
 In case you need more flexibility you can use the `comfoair_send_hex` service like follows:
 ```
@@ -115,7 +110,6 @@ data:
 A lot of this repo was inspired by the reverse engineering [here](https://github.com/marco-hoyer/zcan/issues/1).
 If you'd like to know more how the unit communicates, head over
 
- * [here](https://github.com/michaelarnauts/comfoconnect/blob/master/PROTOCOL-RMI.md)
- * [and here](https://github.com/michaelarnauts/comfoconnect/blob/master/PROTOCOL-PDO.md)
+* [here](https://github.com/michaelarnauts/comfoconnect/blob/master/PROTOCOL-RMI.md)
+* [and here](https://github.com/michaelarnauts/comfoconnect/blob/master/PROTOCOL-PDO.md)
 
-There's also a Node.JS version with a Raspberry PI [here](https://github.com/vekexasia/comfoairq-mqtt)
