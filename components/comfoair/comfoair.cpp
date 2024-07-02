@@ -15,6 +15,9 @@ void Comfoair::setup(){
     CAN0.watchFor();
     register_service(&Comfoair::send_command, "send_command", {"command"});
     register_service(&Comfoair::sendHex, "send_hex", {"hexSequence"});
+    register_service(&Comfoair::req_update_service, "req_update_service", {"PDOID"});
+    register_service(&Comfoair::update_next, "update_all", {});
+    this->update_next();
 }
 
 
@@ -47,7 +50,6 @@ void Comfoair::send_command(std::string command) {
     CMDIF(temp_profile_warm)
     ;
 }
-
 void Comfoair::sendHex(std::string hexSequenceToSend) {
     std::vector<uint8_t> bytes;
     for (unsigned int i = 0; i < hexSequenceToSend.length(); i += 2) {
@@ -56,7 +58,6 @@ void Comfoair::sendHex(std::string hexSequenceToSend) {
         bytes.push_back(byte);
     }
     this->sendRaw(bytes.size(), bytes.data());
-
 }
 
 void Comfoair::sendVector(std::vector<uint8_t> *data) {
@@ -70,7 +71,7 @@ void Comfoair::sendRaw(uint8_t length, uint8_t *buf) {
     message.rtr = 0;
 
     if (length > 8) {
-        CanAddress addr = CanAddress(0x11, 0x1, 0, 1, 0, 1, this->sequence);
+        CanAddress addr = CanAddress(0x3a, 0x1, 0, 1, 0, 1, this->sequence);
         uint8_t dataGrams = length / 7;
         if (dataGrams * 7 == length)  {
             dataGrams--;
@@ -79,6 +80,7 @@ void Comfoair::sendRaw(uint8_t length, uint8_t *buf) {
             memset(message.data.byte, 0, 8);
             message.data.uint8[0] = i;
             message.length = min((i*7)+7, length) - i*7 + 1;
+
             message.id = addr.canID();
             memcpy(& message.data.uint8[1], &buf[i * 7], message.length - 1);
             CAN0.sendFrame(message);
@@ -91,13 +93,44 @@ void Comfoair::sendRaw(uint8_t length, uint8_t *buf) {
         CAN0.sendFrame(message);
 
     } else {
-        CanAddress addr = CanAddress(0x11, 0x1, 0, 0, 0, 1, this->sequence);
+        CanAddress addr = CanAddress(0x3a, 0x1, 0, 0, 0, 1, this->sequence);
         message.id = addr.canID();
         message.length = length;
         memcpy(message.data.uint8, buf, length);
         CAN0.sendFrame(message);
 
     }
+}
+
+void Comfoair::update_next() {
+    static size_t to_update = 0;
+
+    if (to_update >= PDOs.size()) {
+        to_update = 0;
+        return;
+    }
+
+    int currentPDO = PDOs[to_update];
+    // You can use currentPDO here for whatever operation you want to perform
+    this->request_data(currentPDO);
+    to_update++;
+    ESP_LOGD(TAG, "update_next %d - iterator %d", currentPDO, to_update);
+    set_timeout("update_next", 1000, [this](){this->update_next();});
+}
+void Comfoair::req_update_service(int pdo){
+    this->request_data(pdo);
+}
+void Comfoair::request_data(uint8_t PDOID) {
+    ESP_LOGD(TAG, "request_data %d", PDOID);
+//    CanAddress addr = CanAddress(0x3, 0x1, 0, 0, 0, 1, this->sequence);
+    CAN_FRAME message;
+    message.extended = true;
+    message.rtr = 1;
+    message.id = (PDOID << 14) + 0x40 + 0x3a;
+
+    ESP_LOGD(TAG, "message.id %d - pdo %d", message.id, message.id >> 14);
+    message.length = 0;
+    ESP_LOGD(TAG, "frame %d", CAN0.sendFrame(message));
 }
 
 void Comfoair::loop(){
@@ -131,9 +164,6 @@ void Comfoair::loop(){
             ComfoSensor<text_sensor::TextSensor, std::string (*)(uint8_t *)> el = textSensors.find(PDOID)->second;
             el.sensor->publish_state(el.conversion(vals));
         }
-
-
-
     }
 
 }

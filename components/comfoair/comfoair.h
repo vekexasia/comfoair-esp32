@@ -28,13 +28,18 @@ class Comfoair: public Component, public esphome::api::CustomAPIDevice {
     cs->divider = divider;
     cs->conversion = conversionType;
     sensors[PDOID] = *cs;
+    this->PDOs.push_back(PDOID);
   }
   void register_textSensor(text_sensor::TextSensor *obj, int PDOID, std::string (*convLambda)(uint8_t *) ) {
     ComfoSensor<text_sensor::TextSensor, std::string (*)(uint8_t *)> *cs = new ComfoSensor<text_sensor::TextSensor, std::string (*)(uint8_t *)>();
     cs->sensor = obj;
     cs->conversion = convLambda;
     textSensors[PDOID] = *cs;
+    this->PDOs.push_back(PDOID);
   }
+  void req_update_service(int pdo);
+  void update_next();
+  void request_data(uint8_t PDOID);
   void send_command(std::string command) ;
   void sendHex(std::string hex);
   void sendVector(std::vector<uint8_t> *data);
@@ -50,6 +55,8 @@ class Comfoair: public Component, public esphome::api::CustomAPIDevice {
   int rx_{-1};
   int tx_{-1};
   uint8_t sequence = 0;
+  uint16_t lastMessageId = 0;
+  std::vector<int> PDOs;
   std::map<int, ComfoSensor<sensor::Sensor, int>> sensors;
   std::map<int, ComfoSensor<text_sensor::TextSensor,  std::string (*)(uint8_t *)>> textSensors;
 };
