@@ -65,12 +65,14 @@ comfoair:
 
 # Home Assistant Services
 
-The component exposes 2 services.
+The component exposes 4 services.
 
 - comfoair_send_command
 - comfoair_send_hex
+- comfoair_update_all
+- comfoair_req_update_service
 
-NOTE: the prefix could differ depending on your esphome device name.
+**NOTE**: the prefix could differ depending on your esphome device name.
 
 **comfoair_send_command**: allows one "command" parameter. The value of the param can be one of the following pre-bundled commands:
 
@@ -104,6 +106,9 @@ data:
 ```
 ^^ the above is equivalent to ventilation_extract_only (which has an inner timer of 1h)
 
+**comfoair_update_all**: this service will request an update of all the values from the Comfoair unit. This is useful in case you want to force an update of all the values.
+
+**comfoair_req_update_service**: this service will request an update of a specific value from the Comfoair unit. This is useful in case you want to force an update of a specific value. You're required to pass the `PDOID` of the service to update
 
 ## Credits
 
