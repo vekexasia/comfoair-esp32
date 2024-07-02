@@ -114,13 +114,13 @@ return vals[0] == 0 ? "auto": (vals[0] == 1 ? "cold": "warm");
     "supply_fan_mode": {
         "PDO": 70,
         "code": '''
-return vals[0] == -1 ? "balanced": "supplyonly";
+return vals[0] == 0 ? "balanced": "supplyonly";
 '''
     },
     "exhaust_fan_mode": {
         "PDO": 71,
         "code": '''
-return vals[0] == -1 ? "balanced": "exhaustonly";
+return vals[0] == 0 ? "balanced": "exhaustonly";
 '''
     }
 
