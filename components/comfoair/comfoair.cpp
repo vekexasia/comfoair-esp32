@@ -2,6 +2,8 @@
 #include "esphome/core/log.h"
 #include <esp32_can.h>
 #include "esphome.h"
+
+
 #define min(a,b) ((a) < (b) ? (a): (b))
 
 namespace esphome {
