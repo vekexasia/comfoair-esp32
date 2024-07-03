@@ -5,10 +5,11 @@ import esphome.config_validation as cv
 from esphome import pins
 from esphome.core import ID
 from esphome.util import Registry
-from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN, CONF_FILTERS
+from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN
 from esphome.components import text_sensor, binary_sensor, sensor
 from enum import Enum
 
+CONF_GLOBAL_FILTERS = "global_filters"
 
 AUTO_LOAD = ["text_sensor", "binary_sensor", "sensor", "climate"]
 MULTI_CONF = True
@@ -149,7 +150,7 @@ CONFIG_SCHEMA = cv.All(
         cv.GenerateID(): cv.declare_id(Comfoair),
         cv.Optional(CONF_RX_PIN, default=21): pins.internal_gpio_input_pin_number,
         cv.Optional(CONF_TX_PIN, default=25): pins.internal_gpio_output_pin_number,
-        cv.Optional(CONF_FILTERS): sensor.validate_filters,
+        cv.Optional(CONF_GLOBAL_FILTERS): sensor.validate_filters,
     })
     .extend(GEN_SENSORS_SCHEMA)
     .extend(GEN_TEXTSENSORS_SCHEMA)
@@ -171,9 +172,9 @@ async def to_code(config):
     for key, value in sensors.items():
         sens = await sensor.new_sensor(config[key])
 
-        if (config.get(CONF_FILTERS)):
+        if (config.get(CONF_GLOBAL_FILTERS)):
             newconf = []
-            for filter in config[CONF_FILTERS]:
+            for filter in config[CONF_GLOBAL_FILTERS]:
                 tmp = filter.copy()
                 tmp['type_id'] = ID(tmp['type_id'].id + key, type=tmp['type_id'].type)
                 newconf.append(tmp)
