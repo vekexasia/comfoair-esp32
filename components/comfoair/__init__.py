@@ -3,7 +3,9 @@ import esphome.codegen as cg
 import esphome.cpp_generator as cppg
 import esphome.config_validation as cv
 from esphome import pins
-from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN
+from esphome.core import ID
+from esphome.util import Registry
+from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN, CONF_FILTERS
 from esphome.components import text_sensor, binary_sensor, sensor
 from enum import Enum
 
@@ -23,6 +25,8 @@ class ComfoNumConvs(Enum):
     UINT32 = 2,
     INT16 = 3
 
+FILTER_REGISTRY = Registry()
+validate_filters = cv.validate_registry("filter", FILTER_REGISTRY)
 sensors = {
     "fan_speed":          {"unit": "", "PDO": 65, "CONV": ComfoNumConvs.UINT8},
     "next_fan_change":    {"unit": "s", "PDO": 81, "CONV": ComfoNumConvs.UINT32},
@@ -145,6 +149,7 @@ CONFIG_SCHEMA = cv.All(
         cv.GenerateID(): cv.declare_id(Comfoair),
         cv.Optional(CONF_RX_PIN, default=21): pins.internal_gpio_input_pin_number,
         cv.Optional(CONF_TX_PIN, default=25): pins.internal_gpio_output_pin_number,
+        cv.Optional(CONF_FILTERS): sensor.validate_filters,
     })
     .extend(GEN_SENSORS_SCHEMA)
     .extend(GEN_TEXTSENSORS_SCHEMA)
@@ -163,10 +168,17 @@ async def to_code(config):
     await cg.register_component(var, config)
     cg.add(var.set_rx(config[CONF_RX_PIN]))
     cg.add(var.set_tx(config[CONF_TX_PIN]))
-
     for key, value in sensors.items():
         sens = await sensor.new_sensor(config[key])
 
+        if (config.get(CONF_FILTERS)):
+            newconf = []
+            for filter in config[CONF_FILTERS]:
+                tmp = filter.copy()
+                tmp['type_id'] = ID(tmp['type_id'].id + key, type=tmp['type_id'].type)
+                newconf.append(tmp)
+            filters = await sensor.build_filters(newconf)
+            cg.add(sens.set_filters(filters))
         cg.add(var.register_sensor(sens, key, value['PDO'], value['CONV'].value, value['div'] if 'div' in value else 1))
 
     for key, value in textSensors.items():
