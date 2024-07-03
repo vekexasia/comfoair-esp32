@@ -27,6 +27,7 @@ class ComfoSensor {
 };
 
 class Comfoair: public Component, public climate::Climate, public esphome::api::CustomAPIDevice {
+
  public:
   void set_rx(int rx) { rx_ = rx; }
   void set_tx(int tx) { tx_ = tx; }
@@ -256,8 +257,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     traits.set_supports_two_point_target_temperature(false);
     traits.set_supports_action(false);
     traits.set_supported_modes({climate::CLIMATE_MODE_AUTO, climate::CLIMATE_MODE_COOL, climate::CLIMATE_MODE_HEAT});
-    traits.set_supported_presets({climate::CLIMATE_PRESET_HOME, climate::CLIMATE_PRESET_AWAY, climate::CLIMATE_PRESET_BOOST});
-    traits.set_supported_custom_presets({"intakeonly", "exhaustonly", "balanced"});
+    traits.set_supported_presets({climate::CLIMATE_PRESET_HOME});
     traits.set_visual_min_temperature(10);
     traits.set_visual_max_temperature(35);
     traits.set_visual_temperature_step(1);
