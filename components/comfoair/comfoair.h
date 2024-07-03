@@ -248,6 +248,9 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     } else if ("extract_air_humidity" == sensorName) {
        this->current_humidity = newVal;
        this->publish_state();
+    } else if ("target_temp" == sensorName) {
+       this->target_temperature = newVal;
+       this->publish_state();
     }
   }
   climate::ClimateTraits traits() override {
