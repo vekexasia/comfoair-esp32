@@ -161,7 +161,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
   void req_update_service(int pdo){
     this->request_data(pdo);
   }
-  void request_data(uint8_t PDOID) {
+  void request_data(int PDOID) {
     ESP_LOGD(TAG, "request_data %d", PDOID);
 //    CanAddress addr = CanAddress(0x3, 0x1, 0, 0, 0, 1, this->sequence);
     CAN_FRAME message;
