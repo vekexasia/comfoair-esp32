@@ -16,6 +16,7 @@ CONF_HUB_ID = 'comfoair'
 empty_sensor_hub_ns = cg.esphome_ns.namespace('comfoair')
 
 Comfoair = empty_sensor_hub_ns.class_('Comfoair', cg.Component)
+ComfoairClimate = empty_sensor_hub_ns.class_('ComfoairClimate', cg.Component)
 class ComfoNumConvs(Enum):
     UINT8 = 0,
     UINT16 = 1,
@@ -162,10 +163,11 @@ async def to_code(config):
     await cg.register_component(var, config)
     cg.add(var.set_rx(config[CONF_RX_PIN]))
     cg.add(var.set_tx(config[CONF_TX_PIN]))
+
     for key, value in sensors.items():
         sens = await sensor.new_sensor(config[key])
 
-        cg.add(var.register_sensor(sens, value['PDO'], value['CONV'].value, value['div'] if 'div' in value else 1))
+        cg.add(var.register_sensor(sens, key, value['PDO'], value['CONV'].value, value['div'] if 'div' in value else 1))
 
     for key, value in textSensors.items():
         sens = await text_sensor.new_text_sensor(config[key])
@@ -174,5 +176,5 @@ async def to_code(config):
     {value['code']}
 }}
 ''')
-        cg.add(var.register_textSensor(sens, value['PDO'], lamda))
-
+        cg.add(var.register_textSensor(sens, key, value['PDO'], lamda))
+    cg.add(cg.App.register_climate(var))
