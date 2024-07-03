@@ -8,7 +8,7 @@ from esphome.components import text_sensor, binary_sensor, sensor
 from enum import Enum
 
 
-AUTO_LOAD = ["text_sensor", "binary_sensor", "sensor"]
+AUTO_LOAD = ["text_sensor", "binary_sensor", "sensor", "climate"]
 MULTI_CONF = True
 
 CONF_HUB_ID = 'comfoair'
