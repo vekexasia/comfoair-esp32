@@ -114,7 +114,8 @@ data:
 
 The component will expose a climate entity with heat,cool,auto modes and all the fan speeds.
 
-Furthermore current indoor humidity and temperature as well as current target temperature will be shon as in the picture below.i
+Furthermore current indoor humidity and temperature as well as current target temperature will be shon as in the picture below.
+
 ![climate.png](docs/climate.png)
 
 ## Global filters
