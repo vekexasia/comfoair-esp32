@@ -110,6 +110,45 @@ data:
 
 **comfoair_req_update_service**: this service will request an update of a specific value from the Comfoair unit. This is useful in case you want to force an update of a specific value. You're required to pass the `PDOID` of the service to update
 
+## Climate Entity
+
+The component will expose a climate entity with heat,cool,auto modes and all the fan speeds.
+
+Furthermore current indoor humidity and temperature as well as current target temperature will be shon as in the picture below.i
+![climate.png](docs/climate.png)
+
+## Global filters
+
+Since this component posts data as soon as it receives it, sometimes it might be useful to avoid spamming home assistant with updates.
+
+To avoid this, you can set the `global_filters`. This accepts the same filters as the `filters` parameter in the `sensor` component.
+
+For example, let's say you want to throttle the sensors for 10s.
+
+```yaml
+
+comfoair:
+  global_filters:
+    - throttle: 10s
+```
+
+Obviously, you can always set the filter on a per-sensor basis.
+
+```yaml
+comfoair:
+  supply_fan_speed:
+    name: supply_fan_speed
+    disabled_by_default: false
+    force_update: false
+    unit_of_measurement: rpm
+    accuracy_decimals: 0
+    filters:
+      - or:
+          - throttle: 300s
+          - delta: 100.0
+```
+
+**NOTE**: when setting `global_filters` that **does** takes precedence over the `filters` set on a per-sensor basis.
 ## Credits
 
 A lot of this repo was inspired by the reverse engineering [here](https://github.com/marco-hoyer/zcan/issues/1).
