@@ -162,16 +162,14 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     this->request_data(pdo);
   }
   void request_data(int PDOID) {
-    ESP_LOGD(TAG, "request_data %d", PDOID);
 //    CanAddress addr = CanAddress(0x3, 0x1, 0, 0, 0, 1, this->sequence);
     CAN_FRAME message;
     message.extended = true;
     message.rtr = 1;
     message.id = (PDOID << 14) + 0x40 + 0x3a;
 
-    ESP_LOGD(TAG, "message.id %d - pdo %d", message.id, message.id >> 14);
     message.length = 0;
-    ESP_LOGD(TAG, "frame %d", CAN0.sendFrame(message));
+    CAN0.sendFrame(message);
   }
 
   void loop(){
