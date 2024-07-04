@@ -118,6 +118,9 @@ Furthermore current indoor humidity and temperature as well as current target te
 
 ![climate.png](docs/climate.png)
 
+
+The climate entity can also be used to set the fan speed, and the mode (heat, cool, auto).
+
 ## Global filters
 
 Since this component posts data as soon as it receives it, sometimes it might be useful to avoid spamming home assistant with updates.
@@ -155,6 +158,6 @@ comfoair:
 A lot of this repo was inspired by the reverse engineering [here](https://github.com/marco-hoyer/zcan/issues/1).
 If you'd like to know more how the unit communicates, head over
 
-* [here](https://github.com/michaelarnauts/comfoconnect/blob/master/PROTOCOL-RMI.md)
-* [and here](https://github.com/michaelarnauts/comfoconnect/blob/master/PROTOCOL-PDO.md)
+* [here](https://github.com/michaelarnauts/aiocomfoconnect/blob/master/docs/PROTOCOL-RMI.md)
+* [and here](https://github.com/michaelarnauts/aiocomfoconnect/blob/master/docs/PROTOCOL-PDO.md)
 
