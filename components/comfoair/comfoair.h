@@ -48,6 +48,14 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     this->PDOs.push_back(PDOID);
     this->PDOsMap[PDOID] = key;
   }
+  void register_binarySensor(binary_sensor::BinarySensor *obj, std::string key, int PDOID, bool (*convLambda)(uint8_t *) ) {
+    ComfoSensor<binary_sensor::BinarySensor, bool (*)(uint8_t *)> *cs = new ComfoSensor<binary_sensor::BinarySensor, bool (*)(uint8_t *)>();
+    cs->sensor = obj;
+    cs->conversion = convLambda;
+    binarySensors[PDOID] = *cs;
+    this->PDOs.push_back(PDOID);
+    this->PDOsMap[PDOID] = key;
+  }
   /**
     * Send a command to the ComfoAir
     * @param command The command to send
@@ -204,6 +212,9 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
             ComfoSensor<text_sensor::TextSensor, std::string (*)(uint8_t *)> el = textSensors.find(PDOID)->second;
             el.sensor->publish_state(el.conversion(vals));
             maybeUpdateClimate(PDOID, el.conversion(vals));
+        }else if (binarySensors.find(PDOID) != binarySensors.end()) {
+            ComfoSensor<binary_sensor::BinarySensor, bool (*)(uint8_t *)> el = binarySensors.find(PDOID)->second;
+            el.sensor->publish_state(el.conversion(vals));
         }
     }
 
@@ -225,6 +236,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
         this->publish_state();
     }
   }
+
   void maybeUpdateClimate(int PDO, float newVal){
     std::string sensorName = this->PDOsMap[PDO];
 //    ESP_LOGD(TAG, "maybeUpdateClimate %s %f", sensorName.c_str(), newVal);
@@ -251,6 +263,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
        this->publish_state();
     }
   }
+
   climate::ClimateTraits traits() override {
     auto traits = climate::ClimateTraits();
     traits.set_supports_current_temperature(true);
@@ -315,11 +328,14 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
   int rx_{-1};
   int tx_{-1};
   uint8_t sequence = 0;
-  uint16_t lastMessageId = 0;
+  /* List of PDOs to request */
   std::vector<int> PDOs;
+  /* map between pdoid and string key */
   std::map<int, std::string> PDOsMap;
   std::map<int, ComfoSensor<sensor::Sensor, int>> sensors;
   std::map<int, ComfoSensor<text_sensor::TextSensor,  std::string (*)(uint8_t *)>> textSensors;
+  std::map<int, ComfoSensor<binary_sensor::BinarySensor, bool (*)(uint8_t *)>> binarySensors;
+
 };
 
 } //namespace comfoair

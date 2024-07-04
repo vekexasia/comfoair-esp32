@@ -35,8 +35,6 @@ sensors = {
     "next_supply_change": {"unit": "s", "PDO": 86, "CONV": ComfoNumConvs.UINT32},
     "next_exhaust_change": {"unit": "s", "PDO": 87, "CONV": ComfoNumConvs.UINT32},
 
-
-
     "exhaust_fan_duty":  {"unit":"%",    "PDO": 117, "CONV": ComfoNumConvs.UINT8 },
     "supply_fan_duty":   {"unit":"%",    "PDO": 118, "CONV": ComfoNumConvs.UINT8 },
     "exhaust_fan_flow":  {"unit":"m³/h", "PDO": 119, "CONV": ComfoNumConvs.UINT16},
@@ -72,7 +70,6 @@ sensors = {
     "pre_heater_temp_after":    {"unit": "°C", "PDO": 277, "CONV": ComfoNumConvs.INT16, "div": 10},
     "post_heater_temp_after":   {"unit": "°C", "PDO": 278, "CONV": ComfoNumConvs.INT16, "div": 10},
 
-
     # humidity
     "extract_air_humidity":   {"unit": "%", "PDO": 290, "CONV": ComfoNumConvs.UINT8},
     "exhaust_air_humidity":   {"unit": "%", "PDO": 291, "CONV": ComfoNumConvs.UINT8},
@@ -80,9 +77,6 @@ sensors = {
     "pre_heater_hum_after":   {"unit": "%", "PDO": 293, "CONV": ComfoNumConvs.UINT8},
     "supply_air_humidity":    {"unit": "%", "PDO": 294, "CONV": ComfoNumConvs.UINT8},
 
-    # summer/winter mode
-    "heating_season":   {"unit": "", "PDO": 210, "CONV": ComfoNumConvs.UINT8},
-    "cooling_season":   {"unit": "", "PDO": 211, "CONV": ComfoNumConvs.UINT8},
 
     # analog ports
     "analog_input_0_10v_1":   {"unit": "V", "PDO": 369, "CONV": ComfoNumConvs.UINT8, "div": 10},
@@ -93,12 +87,6 @@ sensors = {
 }
 
 textSensors = {
-    "away_indicator": {
-        "PDO": 16,
-        "code": '''
-return vals[0] == 0x08 ? "true" : "false";
-        '''
-    },
     "operating_mode": {
         "PDO": 49,
         "code": '''
@@ -117,21 +105,51 @@ return  vals[0] == 0 ? "auto": (vals[0] == 1 ? "activated": "deactivated");
 return vals[0] == 0 ? "auto": (vals[0] == 1 ? "cold": "warm");
 '''
     },
-    "supply_fan_mode": {
-        "PDO": 70,
-        "code": '''
-return vals[0] == 0 ? "balanced": "supplyonly";
-'''
-    },
-    "exhaust_fan_mode": {
-        "PDO": 71,
-        "code": '''
-return vals[0] == 0 ? "balanced": "exhaustonly";
-'''
-    }
 
 }
 
+binarySensors = {
+    # summer/winter mode
+    "heating_season":   {
+        "unit": "",
+        "PDO": 210,
+        "code": '''
+return vals[0] == 1;
+        '''
+    },
+    "cooling_season":   {
+        "unit": "",
+        "PDO": 211,
+        "code": '''
+return vals[0] == 1;
+        '''
+    },
+    "manual_mode": {
+        "PDO": 56,
+        "code": '''
+return vals[0] == 1;
+        '''
+    },
+    "away": {
+        "PDO": 16,
+        "code": '''
+return vals[0] == 0x08;
+        '''
+    },
+
+    "fan_supply_only": {
+        "PDO": 70,
+        "code": '''
+return vals[0] != 0;
+        '''
+    },
+    "fan_exhaust_only": {
+        "PDO": 71,
+        "code": '''
+return vals[0] != 0;
+        '''
+    },
+}
 GEN_SENSORS_SCHEMA = {
     cv.Optional(key, default=key): cv.maybe_simple_value(
         sensor.sensor_schema(unit_of_measurement=value['unit'], accuracy_decimals=math.trunc(math.log10(value['div'])) if 'div' in value else 0), key=CONF_NAME, accuracy_decimals=2 )
@@ -144,6 +162,11 @@ GEN_TEXTSENSORS_SCHEMA = {
     for key, value in textSensors.items()
 }
 
+GEN_BINARYSENSORS_SCHEMA = {
+    cv.Optional(key, default=key): cv.maybe_simple_value(
+        binary_sensor.binary_sensor_schema(), key=CONF_NAME)
+    for key, value in binarySensors.items()
+}
 
 CONFIG_SCHEMA = cv.All(
     cv.Schema({
@@ -154,6 +177,7 @@ CONFIG_SCHEMA = cv.All(
     })
     .extend(GEN_SENSORS_SCHEMA)
     .extend(GEN_TEXTSENSORS_SCHEMA)
+    .extend(GEN_BINARYSENSORS_SCHEMA)
     .extend(cv.COMPONENT_SCHEMA),
     )
 
@@ -190,4 +214,14 @@ async def to_code(config):
 }}
 ''')
         cg.add(var.register_textSensor(sens, key, value['PDO'], lamda))
+
+    for key, value in binarySensors.items():
+        sens = await binary_sensor.new_binary_sensor(config[key])
+        lamda = cppg.RawExpression(f'''
+[](uint8_t *vals) -> bool {{ 
+    {value['code']}
+}}
+''')
+        cg.add(var.register_binarySensor(sens, key, value['PDO'], lamda))
+
     cg.add(cg.App.register_climate(var))
