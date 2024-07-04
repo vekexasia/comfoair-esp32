@@ -1,6 +1,8 @@
+Need help? Join the [Discord](https://discord.gg/dUSSRezJXC) or open an issue.
+
 # Comfoair Q 350 ESPHome bridge
 
-This software script let you use a ESP32 + CAN Transceiver to interact with the Comfoair Q 350 unit.
+This software let you use a ESP32 + CAN Transceiver to interact with the Comfoair Q 350 unit.
 
 It does expose all known informations of your Comfoair unit via ESPHOME and let you control the air flow via Home Assistant as well.
 
