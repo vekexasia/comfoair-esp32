@@ -11,7 +11,7 @@
 #include "esphome/components/climate/climate_traits.h"
 #include "CanAddress.h"
 #include "commands.h"
-#define min(a,b) ((a) < (b) ? (a): (b))
+#define amin(a,b) ((a) < (b) ? (a): (b))
 
 namespace esphome {
 namespace comfoair {
@@ -117,7 +117,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
          for (uint8_t i = 0; i < dataGrams; i++) {
              memset(message.data.byte, 0, 8);
              message.data.uint8[0] = i;
-             message.length = min((i*7)+7, length) - i*7 + 1;
+             message.length = amin((i*7)+7, length) - i*7 + 1;
 
              message.id = addr.canID();
              memcpy(& message.data.uint8[1], &buf[i * 7], message.length - 1);
