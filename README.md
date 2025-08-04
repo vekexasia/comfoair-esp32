@@ -58,6 +58,8 @@ To include this repo use the external_components configuration like so:
 external_components:
   - source: github://vekexasia/comfoair-esp32
     components: [ comfoair ]
+api:
+  custom_services: true # <--- This is needed
 
 comfoair:
 
