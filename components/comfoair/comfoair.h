@@ -166,8 +166,8 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     ESP_LOGD(TAG, "update_next %d - iterator %d", currentPDO, to_update);
     set_timeout("update_next", 1000, [this](){this->update_next();});
   }
-  void req_update_service(int pdo){
-    this->request_data(pdo);
+  void req_update_service(float pdo){
+    this->request_data((int)pdo);
   }
   void request_data(int PDOID) {
 //    CanAddress addr = CanAddress(0x3, 0x1, 0, 0, 0, 1, this->sequence);

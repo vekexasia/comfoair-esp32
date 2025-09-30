@@ -9,6 +9,7 @@ from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_R
 from esphome.components import text_sensor, binary_sensor, sensor
 from enum import Enum
 
+DEPENDENCIES = ['climate']
 CONF_GLOBAL_FILTERS = "global_filters"
 
 AUTO_LOAD = ["text_sensor", "binary_sensor", "sensor", "climate"]
@@ -152,7 +153,7 @@ return vals[0] != 0;
 }
 GEN_SENSORS_SCHEMA = {
     cv.Optional(key, default=key): cv.maybe_simple_value(
-        sensor.sensor_schema(unit_of_measurement=value['unit'], accuracy_decimals=math.trunc(math.log10(value['div'])) if 'div' in value else 0), key=CONF_NAME, accuracy_decimals=2 )
+        sensor.sensor_schema(unit_of_measurement=value['unit'], accuracy_decimals=math.trunc(math.log10(value['div'])) if 'div' in value else 0), key=CONF_NAME, )
     for key, value in sensors.items()
 }
 
@@ -184,9 +185,9 @@ CONFIG_SCHEMA = cv.All(
 
 
 async def to_code(config):
-    cg.add_library("SPI", "2.0.0")
-    cg.add_library("can_common", None, "https://github.com/collin80/can_common.git#07605a2a9f4963ee68a9ecf7790d38b22f6d2cdf")
-    cg.add_library("esp32_can", None, "https://github.com/collin80/esp32_can.git#0fb9878a77935d2995e094d196971009e0da3c48")
+    #cg.add_library("SPI", "2.0.0")
+    cg.add_library("can_common", None, "https://github.com/collin80/can_common.git#8585f9dc807ebbeedeb509d74159f40f538d2d65")
+    cg.add_library("esp32_can", None, "https://github.com/collin80/esp32_can.git#6d835ae82d46748e8267b350680c851a46b38eea")
 
 
     var = cg.new_Pvariable(config[CONF_ID])
@@ -196,14 +197,21 @@ async def to_code(config):
     for key, value in sensors.items():
         sens = await sensor.new_sensor(config[key])
 
+        filterconf = []
         if (config.get(CONF_GLOBAL_FILTERS)):
-            newconf = []
             for filter in config[CONF_GLOBAL_FILTERS]:
-                tmp = filter.copy()
-                tmp['type_id'] = ID(tmp['type_id'].id + key, type=tmp['type_id'].type)
-                newconf.append(tmp)
-            filters = await sensor.build_filters(newconf)
-            cg.add(sens.set_filters(filters))
+               tmp = filter.copy()
+               tmp['type_id'] = ID(tmp['type_id'].id + key, type=tmp['type_id'].type)
+               filterconf.append(tmp)
+        # Append a rounding filter honoring the sensor's accuracy_decimals
+        #decimals = config[key].get('accuracy_decimals', 0)
+        #round_cls = cg.esphome_ns.namespace('sensor').class_('RoundFilter')
+        #round_filter = cg.new_Pvariable(round_cls, 1)  # 1 = round to 1 decimal; swap with var or config value
+        #filterconf.append({'round': 2, 'type_id': ID(f"{key}_round", type=round_cls)})
+        
+        filters = await sensor.build_filters(filterconf)    
+        cg.add(sens.add_filters(filters))
+
         cg.add(var.register_sensor(sens, key, value['PDO'], value['CONV'].value, value['div'] if 'div' in value else 1))
 
     for key, value in textSensors.items():
@@ -224,4 +232,4 @@ async def to_code(config):
 ''')
         cg.add(var.register_binarySensor(sens, key, value['PDO'], lamda))
 
-    cg.add(cg.App.register_climate(var))
+    #cg.add(cg.App.register_climate(var))
