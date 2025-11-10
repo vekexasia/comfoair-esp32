@@ -31,7 +31,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
  public:
   void set_rx(int rx) { rx_ = rx; }
   void set_tx(int tx) { tx_ = tx; }
-  void register_sensor(sensor::Sensor *obj, const std::string& key, int PDOID, int conversionType, int divider) {
+  void register_sensor(sensor::Sensor *obj, std::string key, int PDOID, int conversionType, int divider) {
     ComfoSensor<sensor::Sensor, int> *cs = new ComfoSensor<sensor::Sensor, int>();
     cs->sensor = obj;
     cs->divider = divider;
@@ -40,7 +40,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     this->PDOs.push_back(PDOID);
     this->PDOsMap[PDOID] = key;
   }
-  void register_textSensor(text_sensor::TextSensor *obj, const std::string& key, int PDOID, std::string (*convLambda)(uint8_t *) ) {
+  void register_textSensor(text_sensor::TextSensor *obj, std::string key, int PDOID, std::string (*convLambda)(uint8_t *) ) {
     ComfoSensor<text_sensor::TextSensor, std::string (*)(uint8_t *)> *cs = new ComfoSensor<text_sensor::TextSensor, std::string (*)(uint8_t *)>();
     cs->sensor = obj;
     cs->conversion = convLambda;
@@ -48,7 +48,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     this->PDOs.push_back(PDOID);
     this->PDOsMap[PDOID] = key;
   }
-  void register_binarySensor(binary_sensor::BinarySensor *obj, const std::string& key, int PDOID, bool (*convLambda)(uint8_t *) ) {
+  void register_binarySensor(binary_sensor::BinarySensor *obj, std::string key, int PDOID, bool (*convLambda)(uint8_t *) ) {
     ComfoSensor<binary_sensor::BinarySensor, bool (*)(uint8_t *)> *cs = new ComfoSensor<binary_sensor::BinarySensor, bool (*)(uint8_t *)>();
     cs->sensor = obj;
     cs->conversion = convLambda;
