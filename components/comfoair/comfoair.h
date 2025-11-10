@@ -60,9 +60,8 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     * Send a command to the ComfoAir
     * @param command The command to send
     */
-  void send_command(const char* command) {
-    std::string cmd(command);
-    #define CMDIF(name) if (cmd == #name) { \
+  void send_command(std::string command) {
+    #define CMDIF(name) if (command == #name) { \
                           std::vector<uint8_t> cmd_data( CMD_ ## name ); \
                           this->sendVector(&cmd_data); \
                           delay(1000); \
@@ -91,12 +90,11 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     CMDIF(temp_profile_warm)
     ;
   }
-  void sendHex(const char* hexSequenceToSend) {
-    std::string hexStr(hexSequenceToSend);
+  void sendHex(std::string hexSequenceToSend) {
     std::vector<uint8_t> bytes;
-    bytes.reserve(hexStr.length() / 2);
-    for (unsigned int i = 0; i < hexStr.length(); i += 2) {
-        std::string byteString = hexStr.substr(i, 2);
+    bytes.reserve(hexSequenceToSend.length() / 2);
+    for (unsigned int i = 0; i < hexSequenceToSend.length(); i += 2) {
+        std::string byteString = hexSequenceToSend.substr(i, 2);
         uint8_t byte = (uint8_t) strtol(byteString.c_str(), NULL, 16);
         bytes.push_back(byte);
     }
@@ -148,8 +146,6 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
      CAN0.setCANPins( (gpio_num_t) this->rx_, (gpio_num_t) this->tx_);
      CAN0.begin(50000);
      CAN0.watchFor();
-     register_service(&Comfoair::send_command, "send_command", {"command"});
-     register_service(&Comfoair::sendHex, "send_hex", {"hexSequence"});
      register_service(&Comfoair::req_update_service, "req_update_service", {"PDOID"});
      register_service(&Comfoair::update_next, "update_all", {});
      this->update_next();
