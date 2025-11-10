@@ -1,0 +1,526 @@
+# ============================================================================
+# ComfoAir ESP32 - Vollständige Referenz-Konfiguration
+# ============================================================================
+# Diese Datei zeigt ALLE verfügbaren Parameter und Sensoren
+# Angepasst an die tatsächliche generierte Konfiguration
+# ============================================================================
+
+esphome:
+  name: esp32-comfoair-can-bridge
+  friendly_name: ComfoAir Q350 CAN
+  name_add_mac_suffix: false
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: DEBUG
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/waverider93/comfoair-esp32
+      ref: fix/memory-leak-and-optimizations
+    components: [comfoair]
+    refresh: 1d
+
+api:
+  encryption:
+    key: !secret api_key
+  custom_services: true
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+# ============================================================================
+# COMFOAIR KOMPONENTE - VOLLSTÄNDIGE KONFIGURATION
+# ============================================================================
+comfoair:
+  - id: comfo
+    name: "ComfoAir Q350"  # Name für das Climate-Entity (ERFORDERLICH!)
+    
+    # -------------------------------------------------------------------------
+    # CAN-Bus Pins (GPIO-Nummern)
+    # -------------------------------------------------------------------------
+    tx_pin: 25  # Standard: 25
+    rx_pin: 21  # Standard: 21
+    
+    # -------------------------------------------------------------------------
+    # Climate-Entity Visual-Einstellungen (Optional)
+    # -------------------------------------------------------------------------
+    visual:
+      min_temperature: 15 °C
+      max_temperature: 30 °C
+      temperature_step: 0.5 °C
+    
+    # disabled_by_default: false  # Alle Entitäten standardmäßig aktiviert
+    
+    # =========================================================================
+    # SENSOREN (Sensor-Plattform)
+    # =========================================================================
+    
+    # -------------------------------------------------------------------------
+    # Lüfter-Sensoren
+    # -------------------------------------------------------------------------
+    fan_speed:
+      name: "Lüfterstufe"
+      # disabled_by_default: false
+      # force_update: false
+      # unit_of_measurement: ""
+      # accuracy_decimals: 0
+    
+    exhaust_fan_duty:
+      name: "Abluft Lüfter Leistung"
+      # unit_of_measurement: "%"
+      # accuracy_decimals: 0
+    
+    supply_fan_duty:
+      name: "Zuluft Lüfter Leistung"
+      # unit_of_measurement: "%"
+    
+    exhaust_fan_flow:
+      name: "Abluft Volumenstrom"
+      # unit_of_measurement: "m³/h"
+    
+    supply_fan_flow:
+      name: "Zuluft Volumenstrom"
+      # unit_of_measurement: "m³/h"
+    
+    exhaust_fan_speed:
+      name: "Abluft Lüfterdrehzahl"
+      # unit_of_measurement: "rpm"
+    
+    supply_fan_speed:
+      name: "Zuluft Lüfterdrehzahl"
+      # unit_of_measurement: "rpm"
+    
+    # -------------------------------------------------------------------------
+    # Timer-Sensoren (nächste Änderung in Sekunden)
+    # -------------------------------------------------------------------------
+    next_fan_change:
+      name: "Nächste Lüfterstufen-Änderung"
+      # unit_of_measurement: "s"
+    
+    next_bypass_change:
+      name: "Nächste Bypass-Änderung"
+      # unit_of_measurement: "s"
+    
+    next_supply_change:
+      name: "Nächste Zuluft-Änderung"
+      # unit_of_measurement: "s"
+    
+    next_exhaust_change:
+      name: "Nächste Abluft-Änderung"
+      # unit_of_measurement: "s"
+    
+    # -------------------------------------------------------------------------
+    # Energie-Sensoren
+    # -------------------------------------------------------------------------
+    power_consumption_current:
+      name: "Aktueller Stromverbrauch"
+      # unit_of_measurement: "W"
+    
+    energy_consumption_ytd:
+      name: "Energieverbrauch Jahr"
+      # unit_of_measurement: "kWh"
+    
+    energy_consumption_since_start:
+      name: "Energieverbrauch Gesamt"
+      # unit_of_measurement: "kWh"
+    
+    # -------------------------------------------------------------------------
+    # Wartung
+    # -------------------------------------------------------------------------
+    days_remaining_filter:
+      name: "Tage bis Filterwechsel"
+      # unit_of_measurement: "days"
+    
+    # -------------------------------------------------------------------------
+    # Wärmerückgewinnung - Heizung vermieden
+    # -------------------------------------------------------------------------
+    avoided_heating_actual:
+      name: "Vermiedene Heizleistung aktuell"
+      # unit_of_measurement: "W"
+    
+    avoided_heating_ytd:
+      name: "Vermiedene Heizenergie Jahr"
+      # unit_of_measurement: "kWh"
+    
+    avoided_heating_total:
+      name: "Vermiedene Heizenergie Gesamt"
+      # unit_of_measurement: "kWh"
+    
+    # -------------------------------------------------------------------------
+    # Wärmerückgewinnung - Kühlung vermieden
+    # -------------------------------------------------------------------------
+    avoided_cooling_actual:
+      name: "Vermiedene Kühlleistung aktuell"
+      # unit_of_measurement: "W"
+    
+    avoided_cooling_ytd:
+      name: "Vermiedene Kühlenergie Jahr"
+      # unit_of_measurement: "kWh"
+    
+    avoided_cooling_total:
+      name: "Vermiedene Kühlenergie Gesamt"
+      # unit_of_measurement: "kWh"
+    
+    # -------------------------------------------------------------------------
+    # Bypass
+    # -------------------------------------------------------------------------
+    bypass_state:
+      name: "Bypass Status"
+      # unit_of_measurement: "%"
+    
+    # -------------------------------------------------------------------------
+    # Temperaturen (Genauigkeit: 1 Dezimalstelle)
+    # -------------------------------------------------------------------------
+    rmot:
+      name: "Raumtemperatur (RMOT)"
+      # unit_of_measurement: "°C"
+      # accuracy_decimals: 1
+    
+    target_temp:
+      name: "Soll-Temperatur"
+      # unit_of_measurement: "°C"
+      # accuracy_decimals: 1
+    
+    pre_heater_temp_before:
+      name: "Vorheizer Temperatur vorher"
+      # unit_of_measurement: "°C"
+      # accuracy_decimals: 1
+    
+    post_heater_temp_before:
+      name: "Nachheizer Temperatur vorher"
+      # unit_of_measurement: "°C"
+      # accuracy_decimals: 1
+    
+    extract_air_temp:
+      name: "Fortluft Temperatur"  # Aus dem Raum
+      # unit_of_measurement: "°C"
+      # accuracy_decimals: 1
+    
+    exhaust_air_temp:
+      name: "Abluft Temperatur"  # Nach Wärmetauscher
+      # unit_of_measurement: "°C"
+      # accuracy_decimals: 1
+    
+    outdoor_air_temp:
+      name: "Außenluft Temperatur"
+      # unit_of_measurement: "°C"
+      # accuracy_decimals: 1
+    
+    pre_heater_temp_after:
+      name: "Vorheizer Temperatur nachher"
+      # unit_of_measurement: "°C"
+      # accuracy_decimals: 1
+    
+    post_heater_temp_after:
+      name: "Nachheizer Temperatur nachher"
+      # unit_of_measurement: "°C"
+      # accuracy_decimals: 1
+    
+    # -------------------------------------------------------------------------
+    # Luftfeuchtigkeit
+    # -------------------------------------------------------------------------
+    extract_air_humidity:
+      name: "Fortluft Luftfeuchtigkeit"
+      # unit_of_measurement: "%"
+    
+    exhaust_air_humidity:
+      name: "Abluft Luftfeuchtigkeit"
+      # unit_of_measurement: "%"
+    
+    outdoor_air_humidity:
+      name: "Außenluft Luftfeuchtigkeit"
+      # unit_of_measurement: "%"
+    
+    pre_heater_hum_after:
+      name: "Luftfeuchtigkeit nach Vorheizer"
+      # unit_of_measurement: "%"
+    
+    supply_air_humidity:
+      name: "Zuluft Luftfeuchtigkeit"
+      # unit_of_measurement: "%"
+    
+    # -------------------------------------------------------------------------
+    # Analoge Eingänge (0-10V)
+    # -------------------------------------------------------------------------
+    analog_input_0_10v_1:
+      name: "Analogeingang 1"
+      # unit_of_measurement: "V"
+      # accuracy_decimals: 1
+    
+    analog_input_0_10v_2:
+      name: "Analogeingang 2"
+      # unit_of_measurement: "V"
+      # accuracy_decimals: 1
+    
+    analog_input_0_10v_3:
+      name: "Analogeingang 3"
+      # unit_of_measurement: "V"
+      # accuracy_decimals: 1
+    
+    analog_input_0_10v_4:
+      name: "Analogeingang 4"
+      # unit_of_measurement: "V"
+      # accuracy_decimals: 1
+    
+    # =========================================================================
+    # TEXT-SENSOREN
+    # =========================================================================
+    operating_mode:
+      name: "Betriebsmodus"
+      # Werte: "limited_manual", "auto", "unlimited_manual"
+    
+    bypass_activation_mode:
+      name: "Bypass Aktivierungsmodus"
+      # Werte: "auto", "activated", "deactivated"
+    
+    temp_profile:
+      name: "Temperaturprofil"
+      # Werte: "auto", "cold", "warm"
+    
+    # =========================================================================
+    # BINÄR-SENSOREN
+    # =========================================================================
+    heating_season:
+      name: "Heizperiode aktiv"
+      # Wert: true/false
+    
+    cooling_season:
+      name: "Kühlperiode aktiv"
+      # Wert: true/false
+    
+    manual_mode:
+      name: "Manueller Modus"
+      # Wert: true/false
+    
+    away:
+      name: "Abwesenheitsmodus"
+      # Wert: true/false
+    
+    fan_supply_only:
+      name: "Nur Zuluft aktiv"
+      # Wert: true/false
+    
+    fan_exhaust_only:
+      name: "Nur Abluft aktiv"
+      # Wert: true/false
+
+# ============================================================================
+# ZEIT-SYNCHRONISATION
+# ============================================================================
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+# ============================================================================
+# WEB-SERVER
+# ============================================================================
+web_server:
+  port: 80
+
+# ============================================================================
+# BUTTONS - Verfügbare Befehle
+# ============================================================================
+button:
+  # Boost-Modi
+  - platform: template
+    name: "Boost 10 Minuten"
+    on_press:
+      - lambda: id(comfo).send_command("boost_10_min");
+  
+  - platform: template
+    name: "Boost 20 Minuten"
+    on_press:
+      - lambda: id(comfo).send_command("boost_20_min");
+  
+  - platform: template
+    name: "Boost 30 Minuten"
+    on_press:
+      - lambda: id(comfo).send_command("boost_30_min");
+  
+  - platform: template
+    name: "Boost 60 Minuten"
+    on_press:
+      - lambda: id(comfo).send_command("boost_60_min");
+  
+  - platform: template
+    name: "Boost beenden"
+    on_press:
+      - lambda: id(comfo).send_command("boost_end");
+
+# ============================================================================
+# SELECT-MENÜS - Alle verfügbaren Befehle
+# ============================================================================
+select:
+  # Lüftungsstufen
+  - platform: template
+    name: "Lüftungsstufe"
+    id: comfoair_ventilation_level
+    optimistic: true
+    options:
+      - "Stufe 0 (Abwesend)"
+      - "Stufe 1"
+      - "Stufe 2"
+      - "Stufe 3"
+    initial_option: "Stufe 1"
+    set_action:
+      - lambda: |-
+          if (x == "Stufe 0 (Abwesend)") {
+            id(comfo).send_command("ventilation_level_0");
+          } else if (x == "Stufe 1") {
+            id(comfo).send_command("ventilation_level_1");
+          } else if (x == "Stufe 2") {
+            id(comfo).send_command("ventilation_level_2");
+          } else if (x == "Stufe 3") {
+            id(comfo).send_command("ventilation_level_3");
+          }
+  
+  # Betriebsmodus
+  - platform: template
+    name: "Betriebsmodus"
+    id: comfoair_mode
+    optimistic: true
+    options:
+      - "Auto"
+      - "Manuell"
+    initial_option: "Auto"
+    set_action:
+      - lambda: |-
+          if (x == "Auto") {
+            id(comfo).send_command("auto");
+          } else if (x == "Manuell") {
+            id(comfo).send_command("manual");
+          }
+  
+  # Temperaturprofil
+  - platform: template
+    name: "Temperaturprofil"
+    id: comfoair_temp_profile
+    optimistic: true
+    options:
+      - "Normal"
+      - "Kühl"
+      - "Warm"
+    initial_option: "Normal"
+    set_action:
+      - lambda: |-
+          if (x == "Normal") {
+            id(comfo).send_command("temp_profile_normal");
+          } else if (x == "Kühl") {
+            id(comfo).send_command("temp_profile_cool");
+          } else if (x == "Warm") {
+            id(comfo).send_command("temp_profile_warm");
+          }
+  
+  # Bypass-Steuerung
+  - platform: template
+    name: "Bypass Modus"
+    id: comfoair_bypass
+    optimistic: true
+    options:
+      - "Auto"
+      - "1 Stunde aktiviert"
+      - "1 Stunde deaktiviert"
+    initial_option: "Auto"
+    set_action:
+      - lambda: |-
+          if (x == "Auto") {
+            id(comfo).send_command("bypass_auto");
+          } else if (x == "1 Stunde aktiviert") {
+            id(comfo).send_command("bypass_activate_1h");
+          } else if (x == "1 Stunde deaktiviert") {
+            id(comfo).send_command("bypass_deactivate_1h");
+          }
+  
+  # Lüfter-Modus (Nur Zuluft/Nur Abluft)
+  - platform: template
+    name: "Lüfter-Spezial-Modus"
+    id: comfoair_ventilation_special
+    optimistic: true
+    options:
+      - "Normal"
+      - "Nur Zuluft"
+      - "Nur Abluft"
+    initial_option: "Normal"
+    set_action:
+      - lambda: |-
+          if (x == "Normal") {
+            id(comfo).send_command("ventilation_supply_only_reset");
+            id(comfo).send_command("ventilation_extract_only_reset");
+          } else if (x == "Nur Zuluft") {
+            id(comfo).send_command("ventilation_supply_only");
+          } else if (x == "Nur Abluft") {
+            id(comfo).send_command("ventilation_extract_only");
+          }
+
+# ============================================================================
+# VERFÜGBARE BEFEHLE (Übersicht)
+# ============================================================================
+# Diese Befehle können mit id(comfo).send_command("befehl") aufgerufen werden:
+#
+# Lüftungsstufen:
+#   - ventilation_level_0
+#   - ventilation_level_1
+#   - ventilation_level_2
+#   - ventilation_level_3
+#
+# Boost-Modi:
+#   - boost_10_min
+#   - boost_20_min
+#   - boost_30_min
+#   - boost_60_min
+#   - boost_end
+#
+# Betriebsmodus:
+#   - auto
+#   - manual
+#
+# Bypass:
+#   - bypass_activate_1h
+#   - bypass_deactivate_1h
+#   - bypass_auto
+#
+# Spezial-Modi:
+#   - ventilation_supply_only
+#   - ventilation_supply_only_reset
+#   - ventilation_extract_only
+#   - ventilation_extract_only_reset
+#
+# Temperaturprofil:
+#   - temp_profile_normal
+#   - temp_profile_cool
+#   - temp_profile_warm
+# ============================================================================
+
+# ============================================================================
+# VERFÜGBARE SERVICES
+# ============================================================================
+# In Home Assistant stehen folgende Services zur Verfügung:
+#
+# 1. esphome.esp32_comfoair_can_bridge_send_command
+#    Parameter: command (string)
+#    Beispiel: service: esphome.esp32_comfoair_can_bridge_send_command
+#              data:
+#                command: "boost_10_min"
+#
+# 2. esphome.esp32_comfoair_can_bridge_send_hex
+#    Parameter: hexSequence (string)
+#    Für Raw CAN-Befehle in Hex-Format
+#
+# 3. esphome.esp32_comfoair_can_bridge_req_update_service
+#    Parameter: PDOID (float/number)
+#    Für manuelle PDO-Updates
+#
+# 4. esphome.esp32_comfoair_can_bridge_update_all
+#    Keine Parameter
+#    Aktualisiert alle PDOs
+# ============================================================================
