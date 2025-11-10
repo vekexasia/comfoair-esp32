@@ -204,11 +204,6 @@ async def to_code(config):
                tmp = filter.copy()
                tmp['type_id'] = ID(tmp['type_id'].id + key, type=tmp['type_id'].type)
                filterconf.append(tmp)
-        # Append a rounding filter honoring the sensor's accuracy_decimals
-        #decimals = config[key].get('accuracy_decimals', 0)
-        #round_cls = cg.esphome_ns.namespace('sensor').class_('RoundFilter')
-        #round_filter = cg.new_Pvariable(round_cls, 1)  # 1 = round to 1 decimal; swap with var or config value
-        #filterconf.append({'round': 2, 'type_id': ID(f"{key}_round", type=round_cls)})
         
         filters = await sensor.build_filters(filterconf)    
         cg.add(sens.add_filters(filters))
