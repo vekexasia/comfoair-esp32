@@ -60,7 +60,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     * Send a command to the ComfoAir
     * @param command The command to send
     */
-  void send_command(const std::string& command) {
+  void send_command(std::string command) {
     #define CMDIF(name) if (command == #name) { \
                           std::vector<uint8_t> cmd_data( CMD_ ## name ); \
                           this->sendVector(&cmd_data); \
@@ -90,7 +90,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     CMDIF(temp_profile_warm)
     ;
   }
-  void sendHex(const std::string& hexSequenceToSend) {
+  void sendHex(std::string hexSequenceToSend) {
     std::vector<uint8_t> bytes;
     bytes.reserve(hexSequenceToSend.length() / 2);
     for (unsigned int i = 0; i < hexSequenceToSend.length(); i += 2) {

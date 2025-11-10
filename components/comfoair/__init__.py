@@ -228,5 +228,5 @@ async def to_code(config):
 ''')
         cg.add(var.register_binarySensor(sens, key, value['PDO'], lamda))
 
-    # Register climate entity with new ESPHome API
-    climate.register_climate(var, config)
+    # Register climate entity with new ESPHome API (must be awaited!)
+    await climate.register_climate(var, config)
