@@ -1,0 +1,211 @@
+esphome:
+  name: esp32-comfoair-can-bridge
+  friendly_name: ComfoAir Q350 CAN
+  name_add_mac_suffix: false
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/waverider93/comfoair-esp32
+      ref: fix/memory-leak-and-optimizations
+    components: [comfoair]
+
+api:
+  encryption:
+    key: "msjssJ8+9dYODl4VWxVBNP1H0AQos10gHlTKhK2imNk="
+  custom_services: true
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+# ComfoAir Komponente mit Climate-Entity
+comfoair:
+  - id: comfo
+    name: "ComfoAir Q350"  # Name für das Climate-Entity (erforderlich!)
+    
+    # CAN-Bus Pins
+    tx_pin: 25
+    rx_pin: 21
+    
+    # Optional: Climate-Entity Einstellungen
+    # visual:
+    #   min_temperature: 15 °C
+    #   max_temperature: 30 °C
+    #   temperature_step: 0.5 °C
+    
+    # Sensor-Konfigurationen (alle optional)
+    fan_speed:
+      name: "Lüfterstufe"
+    
+    exhaust_air_temp:  # Abluft
+      name: "Abluft Temperatur"
+    
+    extract_air_temp:  # Fortluft
+      name: "Fortluft Temperatur"
+    
+    outdoor_air_temp:  # Außenluft
+      name: "Außenluft Temperatur"
+    
+    supply_air_humidity:  # Zuluft Luftfeuchtigkeit
+      name: "Zuluft Luftfeuchtigkeit"
+    
+    exhaust_air_humidity:  # Abluft Luftfeuchtigkeit
+      name: "Abluft Luftfeuchtigkeit"
+    
+    target_temp:
+      name: "Soll-Temperatur"
+    
+    bypass_state:
+      name: "Bypass Status"
+    
+    power_consumption_current:
+      name: "Stromverbrauch aktuell"
+    
+    days_remaining_filter:
+      name: "Tage bis Filterwechsel"
+    
+    # Text Sensoren
+    operating_mode:
+      name: "Betriebsmodus"
+    
+    temp_profile:
+      name: "Temperaturprofil"
+    
+    # Binary Sensoren
+    heating_season:
+      name: "Heizperiode"
+    
+    cooling_season:
+      name: "Kühlperiode"
+    
+    manual_mode:
+      name: "Manueller Modus"
+
+# Zeit-Synchronisation
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+# Web-Server für lokalen Zugriff
+web_server:
+  port: 80
+
+# Manuelle Steuerung via Buttons
+button:
+  - platform: template
+    name: "Boost 10 Minuten"
+    id: comfoair_boost_10min
+    on_press:
+      then:
+        - lambda: |-
+            id(comfo).send_command("boost_10_min");
+  
+  - platform: template
+    name: "Boost 20 Minuten"
+    on_press:
+      then:
+        - lambda: |-
+            id(comfo).send_command("boost_20_min");
+  
+  - platform: template
+    name: "Boost 30 Minuten"
+    on_press:
+      then:
+        - lambda: |-
+            id(comfo).send_command("boost_30_min");
+  
+  - platform: template
+    name: "Boost beenden"
+    on_press:
+      then:
+        - lambda: |-
+            id(comfo).send_command("boost_end");
+
+# Select-Menüs für manuelle Steuerung
+select:
+  - platform: template
+    name: "Lüftungsstufe"
+    id: comfoair_ventilation_level
+    optimistic: true
+    options:
+      - "Abwesend"
+      - "Stufe 1"
+      - "Stufe 2"
+      - "Stufe 3"
+    initial_option: "Stufe 1"
+    set_action:
+      - lambda: |-
+          if (x == "Stufe 1") {
+            id(comfo).send_command("ventilation_level_1");
+          } else if (x == "Stufe 2") {
+            id(comfo).send_command("ventilation_level_2");
+          } else if (x == "Stufe 3") {
+            id(comfo).send_command("ventilation_level_3");
+          } else if (x == "Abwesend") {
+            id(comfo).send_command("ventilation_level_0");
+          }
+  
+  - platform: template
+    name: "Betriebsmodus"
+    id: comfoair_mode
+    optimistic: true
+    options:
+      - "Auto"
+      - "Manuell"
+    initial_option: "Auto"
+    set_action:
+      - lambda: |-
+          if (x == "Auto") {
+            id(comfo).send_command("auto");
+          } else if (x == "Manuell") {
+            id(comfo).send_command("manual");
+          }
+  
+  - platform: template
+    name: "Temperaturprofil"
+    id: comfoair_temp_profile
+    optimistic: true
+    options:
+      - "Normal"
+      - "Kühl"
+      - "Warm"
+    initial_option: "Normal"
+    set_action:
+      - lambda: |-
+          if (x == "Normal") {
+            id(comfo).send_command("temp_profile_normal");
+          } else if (x == "Kühl") {
+            id(comfo).send_command("temp_profile_cool");
+          } else if (x == "Warm") {
+            id(comfo).send_command("temp_profile_warm");
+          }
+  
+  - platform: template
+    name: "Bypass Modus"
+    id: comfoair_bypass
+    optimistic: true
+    options:
+      - "Auto"
+      - "1h aktiviert"
+      - "1h deaktiviert"
+    initial_option: "Auto"
+    set_action:
+      - lambda: |-
+          if (x == "Auto") {
+            id(comfo).send_command("bypass_auto");
+          } else if (x == "1h aktiviert") {
+            id(comfo).send_command("bypass_activate_1h");
+          } else if (x == "1h deaktiviert") {
+            id(comfo).send_command("bypass_deactivate_1h");
+          }

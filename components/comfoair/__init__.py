@@ -6,7 +6,7 @@ from esphome import pins
 from esphome.core import ID
 from esphome.util import Registry
 from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN
-from esphome.components import text_sensor, binary_sensor, sensor
+from esphome.components import text_sensor, binary_sensor, sensor, climate
 from enum import Enum
 
 DEPENDENCIES = ['climate']
@@ -170,7 +170,7 @@ GEN_BINARYSENSORS_SCHEMA = {
 }
 
 CONFIG_SCHEMA = cv.All(
-    cv.Schema({
+    climate.climate_schema(Comfoair).extend({
         cv.GenerateID(): cv.declare_id(Comfoair),
         cv.Optional(CONF_RX_PIN, default=21): pins.internal_gpio_input_pin_number,
         cv.Optional(CONF_TX_PIN, default=25): pins.internal_gpio_output_pin_number,
@@ -185,8 +185,9 @@ CONFIG_SCHEMA = cv.All(
 
 
 async def to_code(config):
-    #cg.add_library("SPI", "2.0.0")
     cg.add_library("can_common", None, "https://github.com/collin80/can_common.git#8585f9dc807ebbeedeb509d74159f40f538d2d65")
+    # Use latest esp32_can master branch (6d835ae from 28 Mar 2025)
+    # This is the newest available version but may still have ESP-IDF 5+ compatibility issues
     cg.add_library("esp32_can", None, "https://github.com/collin80/esp32_can.git#6d835ae82d46748e8267b350680c851a46b38eea")
 
 
@@ -203,11 +204,6 @@ async def to_code(config):
                tmp = filter.copy()
                tmp['type_id'] = ID(tmp['type_id'].id + key, type=tmp['type_id'].type)
                filterconf.append(tmp)
-        # Append a rounding filter honoring the sensor's accuracy_decimals
-        #decimals = config[key].get('accuracy_decimals', 0)
-        #round_cls = cg.esphome_ns.namespace('sensor').class_('RoundFilter')
-        #round_filter = cg.new_Pvariable(round_cls, 1)  # 1 = round to 1 decimal; swap with var or config value
-        #filterconf.append({'round': 2, 'type_id': ID(f"{key}_round", type=round_cls)})
         
         filters = await sensor.build_filters(filterconf)    
         cg.add(sens.add_filters(filters))
@@ -232,4 +228,5 @@ async def to_code(config):
 ''')
         cg.add(var.register_binarySensor(sens, key, value['PDO'], lamda))
 
-    #cg.add(cg.App.register_climate(var))
+    # Register climate entity with new ESPHome API (must be awaited!)
+    await climate.register_climate(var, config)

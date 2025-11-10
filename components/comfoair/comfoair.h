@@ -62,9 +62,10 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     */
   void send_command(std::string command) {
     #define CMDIF(name) if (command == #name) { \
-                          this->sendVector(new std::vector<uint8_t>( CMD_ ## name )); \
+                          std::vector<uint8_t> cmd_data( CMD_ ## name ); \
+                          this->sendVector(&cmd_data); \
                           delay(1000); \
-                          this->sendVector(new std::vector<uint8_t>( CMD_ ## name )); \
+                          this->sendVector(&cmd_data); \
                         } else
     CMDIF(ventilation_level_0)
     CMDIF(ventilation_level_1)
@@ -91,6 +92,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
   }
   void sendHex(std::string hexSequenceToSend) {
     std::vector<uint8_t> bytes;
+    bytes.reserve(hexSequenceToSend.length() / 2);
     for (unsigned int i = 0; i < hexSequenceToSend.length(); i += 2) {
         std::string byteString = hexSequenceToSend.substr(i, 2);
         uint8_t byte = (uint8_t) strtol(byteString.c_str(), NULL, 16);
@@ -185,8 +187,10 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     if (CAN0.read(canMessage)) {
         uint16_t PDOID = (canMessage.id & 0x01fff000) >> 14;
         uint8_t *vals = &canMessage.data.uint8[0];
-        if (sensors.find(PDOID) != sensors.end()) {
-            ComfoSensor<sensor::Sensor, int> el = sensors.find(PDOID)->second;
+        
+        auto sensor_it = sensors.find(PDOID);
+        if (sensor_it != sensors.end()) {
+            const auto& el = sensor_it->second;
             float sensorVal;
 
             switch (el.conversion) {
@@ -208,13 +212,19 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
             }
             el.sensor->publish_state(sensorVal);
             maybeUpdateClimate(PDOID, sensorVal);
-        } else if (textSensors.find(PDOID) != textSensors.end()) {
-            ComfoSensor<text_sensor::TextSensor, std::string (*)(uint8_t *)> el = textSensors.find(PDOID)->second;
-            el.sensor->publish_state(el.conversion(vals));
-            maybeUpdateClimate(PDOID, el.conversion(vals));
-        }else if (binarySensors.find(PDOID) != binarySensors.end()) {
-            ComfoSensor<binary_sensor::BinarySensor, bool (*)(uint8_t *)> el = binarySensors.find(PDOID)->second;
-            el.sensor->publish_state(el.conversion(vals));
+        } else {
+            auto text_it = textSensors.find(PDOID);
+            if (text_it != textSensors.end()) {
+                const auto& el = text_it->second;
+                el.sensor->publish_state(el.conversion(vals));
+                maybeUpdateClimate(PDOID, el.conversion(vals));
+            } else {
+                auto binary_it = binarySensors.find(PDOID);
+                if (binary_it != binarySensors.end()) {
+                    const auto& el = binary_it->second;
+                    el.sensor->publish_state(el.conversion(vals));
+                }
+            }
         }
     }
 
@@ -223,8 +233,8 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
   void dump_config(){
   }
 
-  void maybeUpdateClimate(int PDO, std::string newVal) {
-    std::string sensorName = this->PDOsMap[PDO];
+  void maybeUpdateClimate(int PDO, const std::string& newVal) {
+    const std::string& sensorName = this->PDOsMap[PDO];
     if ("temp_profile" == sensorName) {
         if (newVal == "auto") {
             this->mode = climate::CLIMATE_MODE_AUTO;
@@ -238,17 +248,19 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
   }
 
   void maybeUpdateClimate(int PDO, float newVal){
-    std::string sensorName = this->PDOsMap[PDO];
+    const std::string& sensorName = this->PDOsMap[PDO];
 //    ESP_LOGD(TAG, "maybeUpdateClimate %s %f", sensorName.c_str(), newVal);
     if ("fan_speed" == sensorName) {
         ESP_LOGD(TAG, "ibua %s %f", sensorName.c_str(), newVal);
-        if (newVal == 0) {
+        // Use integer comparison for discrete fan levels
+        int fanLevel = static_cast<int>(newVal + 0.5f); // Round to nearest int
+        if (fanLevel == 0) {
             this->fan_mode = (climate::CLIMATE_FAN_OFF);
-        } else if (newVal == 1) {
+        } else if (fanLevel == 1) {
             this->fan_mode = (climate::CLIMATE_FAN_LOW);
-        } else if (newVal == 2) {
+        } else if (fanLevel == 2) {
             this->fan_mode = (climate::CLIMATE_FAN_MEDIUM);
-        } else if (newVal == 3) {
+        } else if (fanLevel == 3) {
             this->fan_mode = (climate::CLIMATE_FAN_HIGH);
         }
         this->publish_state();
