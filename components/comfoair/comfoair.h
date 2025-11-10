@@ -146,19 +146,8 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
      CAN0.setCANPins( (gpio_num_t) this->rx_, (gpio_num_t) this->tx_);
      CAN0.begin(50000);
      CAN0.watchFor();
-     
-     // Register string services with lambda wrappers to avoid template issues
-     this->register_service(
-       [this](std::string command) { this->send_command(command); },
-       "send_command", 
-       {"command"}
-     );
-     this->register_service(
-       [this](std::string hexSequence) { this->sendHex(hexSequence); },
-       "send_hex", 
-       {"hexSequence"}
-     );
-     
+     register_service(&Comfoair::send_command, "send_command", {"command"});
+     register_service(&Comfoair::sendHex, "send_hex", {"hexSequence"});
      register_service(&Comfoair::req_update_service, "req_update_service", {"PDOID"});
      register_service(&Comfoair::update_next, "update_all", {});
      this->update_next();
