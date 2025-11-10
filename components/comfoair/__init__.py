@@ -6,7 +6,7 @@ from esphome import pins
 from esphome.core import ID
 from esphome.util import Registry
 from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN
-from esphome.components import text_sensor, binary_sensor, sensor, climate
+from esphome.components import text_sensor, binary_sensor, sensor, climate, api
 from enum import Enum
 
 DEPENDENCIES = ['climate']
@@ -230,3 +230,17 @@ async def to_code(config):
 
     # Register climate entity with new ESPHome API (must be awaited!)
     await climate.register_climate(var, config)
+    
+    # Register Home Assistant services with string parameters
+    await api.register_user_service(
+        var,
+        "send_command",
+        [api.ServiceArg("command", api.ServiceArgType.STRING)],
+        var.send_command
+    )
+    await api.register_user_service(
+        var,
+        "send_hex",
+        [api.ServiceArg("hexSequence", api.ServiceArgType.STRING)],
+        var.sendHex
+    )
