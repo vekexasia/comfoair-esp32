@@ -170,7 +170,7 @@ GEN_BINARYSENSORS_SCHEMA = {
 }
 
 CONFIG_SCHEMA = cv.All(
-    cv.Schema({
+    climate.CLIMATE_SCHEMA.extend({
         cv.GenerateID(): cv.declare_id(Comfoair),
         cv.Optional(CONF_RX_PIN, default=21): pins.internal_gpio_input_pin_number,
         cv.Optional(CONF_TX_PIN, default=25): pins.internal_gpio_output_pin_number,
