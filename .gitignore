@@ -6,3 +6,4 @@
 .vscode/
 src/secrets.h
 .idea/
+__pycache__/

@@ -205,8 +205,10 @@ async def to_code(config):
                tmp['type_id'] = ID(tmp['type_id'].id + key, type=tmp['type_id'].type)
                filterconf.append(tmp)
         
-        filters = await sensor.build_filters(filterconf)    
-        cg.add(sens.add_filters(filters))
+        if filterconf:
+            cg.add_define("USE_SENSOR_FILTER")
+            filters = await sensor.build_filters(filterconf)    
+            cg.add(sens.set_filters(filters))
 
         cg.add(var.register_sensor(sens, key, value['PDO'], value['CONV'].value, value['div'] if 'div' in value else 1))
 

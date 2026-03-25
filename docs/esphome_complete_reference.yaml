@@ -29,7 +29,7 @@ external_components:
 api:
   encryption:
     key: !secret api_key
-  custom_services: true
+  custom_services: true  # Required for comfoair component (ESPHome 2026.3+)
 
 ota:
   - platform: esphome

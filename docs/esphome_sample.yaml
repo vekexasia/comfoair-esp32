@@ -27,6 +27,7 @@ logger:
 api:
   encryption:
     key: "YOUR_KEY_GOES_HERE"
+  custom_services: true  # Required for comfoair component (ESPHome 2026.3+)
 
 ota:
   password: "madrulez"
