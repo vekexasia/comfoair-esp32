@@ -154,18 +154,21 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
   }
 
   void update_next() {
-    static size_t to_update = 0;
-
-    if (to_update >= PDOs.size()) {
-        to_update = 0;
+    if (update_iterator_ >= (int)PDOs.size()) {
+        update_iterator_ = 0;
+        if (!boot_recheck_done_) {
+            // First pass done — schedule a second pass after 30s to fix
+            // boot-time CAN artifacts (e.g. fan_speed PDO returning 0 briefly).
+            boot_recheck_done_ = true;
+            set_timeout("update_recheck", 30000, [this](){this->update_next();});
+        }
         return;
     }
 
-    int currentPDO = PDOs[to_update];
-    // You can use currentPDO here for whatever operation you want to perform
+    int currentPDO = PDOs[update_iterator_];
     this->request_data(currentPDO);
-    to_update++;
-    ESP_LOGD(TAG, "update_next %d - iterator %d", currentPDO, to_update);
+    update_iterator_++;
+    ESP_LOGD(TAG, "update_next %d - iterator %d", currentPDO, update_iterator_);
     set_timeout("update_next", 1000, [this](){this->update_next();});
   }
   void req_update_service(float pdo){
@@ -209,6 +212,18 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
             }
             if (el.divider > 1) {
                 sensorVal = sensorVal / el.divider;
+            }
+            // PDO 65 (fan_speed) always returns 0 via RTR at boot; the real
+            // value only arrives as a spontaneous TPDO when the speed changes.
+            // Skip the zero until we've seen at least one non-zero reading so
+            // we don't incorrectly set the climate fan_mode to OFF on restart.
+            const std::string& sKey = PDOsMap.count(PDOID) ? PDOsMap[PDOID] : "";
+            if (sKey == "fan_speed") {
+                if (sensorVal == 0.0f && !fan_speed_initialized_) {
+                    ESP_LOGD(TAG, "fan_speed: ignoring boot-time RTR zero (not yet initialized)");
+                    return;
+                }
+                if (sensorVal > 0.0f) fan_speed_initialized_ = true;
             }
             el.sensor->publish_state(sensorVal);
             maybeUpdateClimate(PDOID, sensorVal);
@@ -337,6 +352,9 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
   int rx_{-1};
   int tx_{-1};
   uint8_t sequence = 0;
+  int update_iterator_ = 0;
+  bool boot_recheck_done_ = false;
+  bool fan_speed_initialized_ = false;
   /* List of PDOs to request */
   std::vector<int> PDOs;
   /* map between pdoid and string key */
