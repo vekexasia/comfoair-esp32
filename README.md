@@ -102,7 +102,7 @@ The component exposes 4 services.
 - temp_profile_cool
 - temp_profile_warm
 
-In case you need more flexibility you can use the `comfoair_send_hex` service like follows:
+**comfoair_send_hex**: sends a command given as hex bytes, but only if the bytes are exactly those of one of the commands above. Anything else is refused and logged. Some commands can damage the unit, so arbitrary bytes are never sent.
 ```
 service: esphome.comfoair_send_hex
 data:
@@ -113,6 +113,47 @@ data:
 **comfoair_update_all**: this service will request an update of all the values from the Comfoair unit. This is useful in case you want to force an update of all the values.
 
 **comfoair_req_update_service**: this service will request an update of a specific value from the Comfoair unit. This is useful in case you want to force an update of a specific value. You're required to pass the `PDOID` of the service to update
+
+## Unit settings
+
+Some of the unit's own settings are read with RMI and shown in Home Assistant. The ones that are safe to change can be changed from there, and appear under Configuration on the device page.
+
+| Entity | Type | Notes |
+|---|---|---|
+| rmot_heating_threshold, rmot_cooling_threshold | number | Outdoor running mean below which it is the heating season, above which the cooling season |
+| comfort_temperature_warm, _normal, _cool | number | Comfort temperature of each temperature profile |
+| temperature_profile_mode | select | adaptive or fixed |
+| passive_temperature_control | select | off, auto only or on |
+| passive_temperature_control_speed | select | slow, medium or fast |
+| humidity_comfort_control, humidity_protection | select | off, auto only or on |
+| filter_warning_period, filter_lifetime | number | Days |
+| airflow_away, _low, _medium, _high | sensor | Set when the unit is commissioned, read only |
+| bathroom_switch_on_delay, bathroom_switch_off_delay | sensor | Set when the unit is commissioned, read only |
+| hardware_version, firmware_version | text sensor | |
+
+How it works.
+
+- Only the properties listed in `RMI_PROPERTIES` in `rmi.h` are ever read ("get property") or written ("set property"), and only the ones marked writable are written. Other RMI commands can damage the unit and are never sent.
+- A value is only written within the range the unit reports for it, and a number's range in Home Assistant is set to the unit's. Anything else is refused and logged, and the control goes back to the unit's value. After a write the value is read back, so Home Assistant shows what the unit really holds.
+- Settings are read at boot and then every 10 minutes, so changes made on the unit or in the app show up. At boot the connection to Home Assistant waits until they are read, at most 15 s, so Home Assistant gets the real ranges.
+- A setting the unit doesn't know is logged once and not asked again, and one whose range can't be read is shown but not written. The same configuration works on every unit and firmware.
+
+## Status values
+
+As well as the fans, temperatures and energy, the component shows these values the unit sends.
+
+| Entity | Notes |
+|---|---|
+| alarm | On while the unit has a warning, e.g. the filter warning |
+| application_mode | normal, or e.g. filter_wizard while the filters are changed |
+| next_profile_change | Seconds left on a temperature profile timer |
+| preheater_energy_ytd, preheater_energy_since_start, preheater_power_current | Preheater energy (kWh) and power (W) |
+| sensor_ventilation_mode | disabled, active or overruling |
+| fan_speed_modulated | 0 to 300, between the levels while sensor ventilation adjusts the speed |
+| frost_protection_unbalance | % |
+| ventilation_constraints | Why the unit doesn't give the requested airflow, or none |
+
+`ventilation_constraints` lists one or more of resistance, resistance_guard (air resistance limits the fans), noise_guard (fan speed held down to limit noise), preheater_negative, preheater_positive, frost_protection, frost_protection_unbalance, bypass, temperature_comfort, humidity_comfort, humidity_protection, analog_input_1 to 4, analog_preset, rf_sensor_flow_preset, rf_sensor_flow_proportional, hood, comfocool and co2_zone_1 to 8. It shows other if only bits with no known meaning are set.
 
 ## Climate Entity
 
