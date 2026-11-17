@@ -37,6 +37,7 @@ sensors = {
     "next_bypass_change": {"unit": "s", "PDO": 82, "CONV": ComfoNumConvs.UINT32},
     "next_supply_change": {"unit": "s", "PDO": 86, "CONV": ComfoNumConvs.UINT32},
     "next_exhaust_change": {"unit": "s", "PDO": 87, "CONV": ComfoNumConvs.UINT32},
+    "next_profile_change": {"unit": "s", "PDO": 83, "CONV": ComfoNumConvs.UINT32},
 
     "exhaust_fan_duty":  {"unit":"%",    "PDO": 117, "CONV": ComfoNumConvs.UINT8 },
     "supply_fan_duty":   {"unit":"%",    "PDO": 118, "CONV": ComfoNumConvs.UINT8 },
@@ -49,6 +50,10 @@ sensors = {
     "energy_consumption_ytd":         {"unit": "kWh", "PDO": 129, "CONV": ComfoNumConvs.UINT16},
     "energy_consumption_since_start": {"unit": "kWh", "PDO": 130, "CONV": ComfoNumConvs.UINT16},
 
+    "preheater_energy_ytd":           {"unit": "kWh", "PDO": 144, "CONV": ComfoNumConvs.UINT16},
+    "preheater_energy_since_start":   {"unit": "kWh", "PDO": 145, "CONV": ComfoNumConvs.UINT16},
+    "preheater_power_current":        {"unit": "W",   "PDO": 146, "CONV": ComfoNumConvs.UINT16},
+
     "days_remaining_filter": {"unit": "days", "PDO": 192, "CONV": ComfoNumConvs.UINT16},
 
     "avoided_heating_actual": {"unit": "W", "PDO": 213, "CONV": ComfoNumConvs.UINT16},
@@ -60,6 +65,10 @@ sensors = {
     "avoided_cooling_total":  {"unit": "kWh", "PDO": 218, "CONV": ComfoNumConvs.UINT16},
 
     "bypass_state":  {"unit": "%", "PDO": 227, "CONV": ComfoNumConvs.UINT8},
+
+    # 0, 100, 200 or 300, anything between while sensor ventilation modulates the speed
+    "fan_speed_modulated":        {"unit": "", "PDO": 226, "CONV": ComfoNumConvs.UINT16},
+    "frost_protection_unbalance": {"unit": "%", "PDO": 228, "CONV": ComfoNumConvs.UINT8},
 
     # temps
     "rmot":                     {"unit": "°C", "PDO": 209, "CONV": ComfoNumConvs.INT16, "div": 10},
@@ -108,6 +117,48 @@ return  vals[0] == 0 ? "auto": (vals[0] == 1 ? "activated": "deactivated");
 return vals[0] == 0 ? "auto": (vals[0] == 1 ? "cold": "warm");
 '''
     },
+    "application_mode": {
+        "PDO": 18,
+        "code": '''
+static const char *const names[] = {"init", "normal", "filter_wizard", "commissioning", "supplier_factory",
+                                    "zehnder_factory", "recovery", "service_print", "component_check"};
+return vals[0] < 9 ? names[vals[0]] : std::to_string(vals[0]);
+'''
+    },
+    "sensor_ventilation_mode": {
+        "PDO": 225,
+        "code": '''
+static const char *const names[] = {"disabled", "active", "overruling"};
+return vals[0] < 3 ? names[vals[0]] : std::to_string(vals[0]);
+'''
+    },
+    # Why the unit doesn't run at the requested airflow, as in aiocomfoconnect calculate_airflow_constraints()
+    "ventilation_constraints": {
+        "PDO": 230,
+        "code": '''
+uint64_t bits = 0;
+for (int i = 0; i < 8; i++) bits |= (uint64_t) vals[i] << (8 * i);
+if (!(bits & (1ULL << 45))) return "none";
+static const struct { uint8_t bit; const char *name; } names[] = {
+    {2, "resistance"}, {3, "resistance"}, {4, "preheater_negative"}, {5, "noise_guard"}, {7, "noise_guard"},
+    {6, "resistance_guard"}, {8, "resistance_guard"}, {9, "frost_protection"}, {10, "bypass"},
+    {12, "analog_input_1"}, {13, "analog_input_2"}, {14, "analog_input_3"}, {15, "analog_input_4"},
+    {16, "hood"}, {18, "analog_preset"}, {19, "comfocool"}, {22, "preheater_positive"},
+    {23, "rf_sensor_flow_preset"}, {24, "rf_sensor_flow_proportional"}, {25, "temperature_comfort"},
+    {26, "humidity_comfort"}, {27, "humidity_protection"}, {41, "frost_protection_unbalance"},
+    {42, "frost_protection_unbalance"}, {47, "co2_zone_1"}, {48, "co2_zone_2"}, {49, "co2_zone_3"},
+    {50, "co2_zone_4"}, {51, "co2_zone_5"}, {52, "co2_zone_6"}, {53, "co2_zone_7"}, {54, "co2_zone_8"}};
+std::string text;
+const char *last = nullptr;
+for (const auto &n : names) {
+  if (!(bits & (1ULL << n.bit)) || (last && strcmp(n.name, last) == 0)) continue;  // pairs sharing a name are next to each other
+  if (!text.empty()) text += ", ";
+  text += n.name;
+  last = n.name;
+}
+return text.empty() ? "other" : text;
+'''
+    },
 
 }
 
@@ -148,6 +199,12 @@ rmiSelects = {
 }
 
 binarySensors = {
+    "alarm": {
+        "PDO": 17,
+        "code": '''
+return vals[0] == 1;
+        '''
+    },
     # summer/winter mode
     "heating_season":   {
         "unit": "",

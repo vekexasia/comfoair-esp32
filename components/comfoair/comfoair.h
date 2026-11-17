@@ -1,6 +1,7 @@
 #pragma once
 #include <esp32_can.h>
 #include <cmath>
+#include <cstring>
 #include <deque>
 
 #include "esphome/components/api/custom_api_device.h"
