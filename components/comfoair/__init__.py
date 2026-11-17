@@ -5,7 +5,7 @@ import esphome.config_validation as cv
 from esphome import pins
 from esphome.core import ID
 from esphome.util import Registry
-from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN
+from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN, CONF_FILTERS
 from esphome.components import text_sensor, binary_sensor, sensor, climate
 from enum import Enum
 
@@ -198,7 +198,8 @@ async def to_code(config):
         sens = await sensor.new_sensor(config[key])
 
         filterconf = []
-        if (config.get(CONF_GLOBAL_FILTERS)):
+        # Global filters apply only to sensors without their own filters (even [])
+        if config.get(CONF_GLOBAL_FILTERS) and CONF_FILTERS not in config[key]:
             for filter in config[CONF_GLOBAL_FILTERS]:
                tmp = filter.copy()
                tmp['type_id'] = ID(tmp['type_id'].id + key, type=tmp['type_id'].type)
