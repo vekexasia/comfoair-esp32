@@ -1,3 +1,4 @@
+import copy
 import math
 import esphome.codegen as cg
 import esphome.cpp_generator as cppg
@@ -184,6 +185,27 @@ CONFIG_SCHEMA = cv.All(
 
 
 
+def _with_unique_ids(conf, suffix):
+    """Copy a filter config, adding suffix to every declared ID, nested ones included."""
+    if isinstance(conf, ID):
+        if not conf.is_declaration:
+            return conf
+        new_id = copy.copy(conf)
+        new_id.id = conf.id + suffix
+        return new_id
+    if isinstance(conf, dict):
+        new_conf = copy.copy(conf)
+        for k, v in conf.items():
+            new_conf[k] = _with_unique_ids(v, suffix)
+        return new_conf
+    if isinstance(conf, list):
+        new_conf = copy.copy(conf)
+        for i, v in enumerate(conf):
+            new_conf[i] = _with_unique_ids(v, suffix)
+        return new_conf
+    return conf
+
+
 async def to_code(config):
     cg.add_library("can_common", None, "https://github.com/collin80/can_common.git#8585f9dc807ebbeedeb509d74159f40f538d2d65")
     # TechOverflow fork supports ESP-IDF 5.5+ and declares its can_common dependency.
@@ -200,10 +222,7 @@ async def to_code(config):
         filterconf = []
         # Global filters apply only to sensors without their own filters (even [])
         if config.get(CONF_GLOBAL_FILTERS) and CONF_FILTERS not in config[key]:
-            for filter in config[CONF_GLOBAL_FILTERS]:
-               tmp = filter.copy()
-               tmp['type_id'] = ID(tmp['type_id'].id + key, type=tmp['type_id'].type)
-               filterconf.append(tmp)
+            filterconf = _with_unique_ids(config[CONF_GLOBAL_FILTERS], key)
         
         if filterconf:
             cg.add_define("USE_SENSOR_FILTER")
