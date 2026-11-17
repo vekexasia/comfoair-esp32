@@ -5,14 +5,14 @@ import esphome.config_validation as cv
 from esphome import pins
 from esphome.core import ID
 from esphome.util import Registry
-from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN, ENTITY_CATEGORY_DIAGNOSTIC
-from esphome.components import text_sensor, binary_sensor, sensor, climate
+from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN, ENTITY_CATEGORY_CONFIG, ENTITY_CATEGORY_DIAGNOSTIC
+from esphome.components import text_sensor, binary_sensor, sensor, climate, number, select
 from enum import Enum
 
 DEPENDENCIES = ['climate']
 CONF_GLOBAL_FILTERS = "global_filters"
 
-AUTO_LOAD = ["text_sensor", "binary_sensor", "sensor", "climate"]
+AUTO_LOAD = ["text_sensor", "binary_sensor", "sensor", "climate", "number", "select"]
 MULTI_CONF = True
 
 CONF_HUB_ID = 'comfoair'
@@ -21,6 +21,8 @@ empty_sensor_hub_ns = cg.esphome_ns.namespace('comfoair')
 
 Comfoair = empty_sensor_hub_ns.class_('Comfoair', cg.Component)
 ComfoairClimate = empty_sensor_hub_ns.class_('ComfoairClimate', cg.Component)
+ComfoairNumber = empty_sensor_hub_ns.class_('ComfoairNumber', number.Number)
+ComfoairSelect = empty_sensor_hub_ns.class_('ComfoairSelect', select.Select)
 class ComfoNumConvs(Enum):
     UINT8 = 0,
     UINT16 = 1,
@@ -109,32 +111,40 @@ return vals[0] == 0 ? "auto": (vals[0] == 1 ? "cold": "warm");
 
 }
 
-# Read with RMI "get property", allowed only if also in RMI_PROPERTIES in rmi.h
+# Read with RMI "get property", and the numbers and selects written with "set property".
+# Allowed only if also in RMI_PROPERTIES in rmi.h with the same kind.
 DIAGNOSTIC = {"category": ENTITY_CATEGORY_DIAGNOSTIC}
 rmiTextSensors = {
     "hardware_version": DIAGNOSTIC,
     "firmware_version": DIAGNOSTIC,
-    "passive_temperature_control": {},
-    "passive_temperature_control_speed": {},
-    "temperature_profile_mode": {},
-    "humidity_comfort_control": {},
-    "humidity_protection": {},
 }
+# Commissioning, read only
 rmiSensors = {
-    "rmot_heating_threshold":     {"unit": "°C", "decimals": 1},
-    "rmot_cooling_threshold":     {"unit": "°C", "decimals": 1},
-    "comfort_temperature_warm":   {"unit": "°C", "decimals": 1},
-    "comfort_temperature_normal": {"unit": "°C", "decimals": 1},
-    "comfort_temperature_cool":   {"unit": "°C", "decimals": 1},
-    "filter_warning_period":      {"unit": "days", "decimals": 0},
-    "filter_lifetime":            {"unit": "days", "decimals": 0},
-    # Commissioning, read only
     "airflow_away":               {"unit": "m³/h", "decimals": 0, **DIAGNOSTIC},
     "airflow_low":                {"unit": "m³/h", "decimals": 0, **DIAGNOSTIC},
     "airflow_medium":             {"unit": "m³/h", "decimals": 0, **DIAGNOSTIC},
     "airflow_high":               {"unit": "m³/h", "decimals": 0, **DIAGNOSTIC},
     "bathroom_switch_on_delay":   {"unit": "s", "decimals": 0, **DIAGNOSTIC},
     "bathroom_switch_off_delay":  {"unit": "min", "decimals": 0, **DIAGNOSTIC},
+}
+# min and max are only until the unit's own range is read, the step is the resolution
+rmiNumbers = {
+    "rmot_heating_threshold":     {"unit": "°C", "min": 0, "max": 20, "step": 0.1},
+    "rmot_cooling_threshold":     {"unit": "°C", "min": 15, "max": 40, "step": 0.1},
+    "comfort_temperature_warm":   {"unit": "°C", "min": 15, "max": 30, "step": 0.1},
+    "comfort_temperature_normal": {"unit": "°C", "min": 15, "max": 30, "step": 0.1},
+    "comfort_temperature_cool":   {"unit": "°C", "min": 15, "max": 30, "step": 0.1},
+    "filter_warning_period":      {"unit": "days", "min": 0, "max": 365, "step": 1},
+    "filter_lifetime":            {"unit": "days", "min": 0, "max": 365, "step": 1},
+}
+# Options in the order of their values (0, 1, 2)
+CONTROL_OPTIONS = ["off", "auto only", "on"]
+rmiSelects = {
+    "passive_temperature_control":       CONTROL_OPTIONS,
+    "passive_temperature_control_speed": ["slow", "medium", "fast"],
+    "temperature_profile_mode":          ["adaptive", "fixed"],
+    "humidity_comfort_control":          CONTROL_OPTIONS,
+    "humidity_protection":               CONTROL_OPTIONS,
 }
 
 binarySensors = {
@@ -204,6 +214,19 @@ GEN_RMISENSORS_SCHEMA = {
     for key, value in rmiSensors.items()
 }
 
+GEN_RMINUMBERS_SCHEMA = {
+    cv.Optional(key, default=key): cv.maybe_simple_value(
+        number.number_schema(ComfoairNumber, unit_of_measurement=value["unit"], entity_category=ENTITY_CATEGORY_CONFIG),
+        key=CONF_NAME)
+    for key, value in rmiNumbers.items()
+}
+
+GEN_RMISELECTS_SCHEMA = {
+    cv.Optional(key, default=key): cv.maybe_simple_value(
+        select.select_schema(ComfoairSelect, entity_category=ENTITY_CATEGORY_CONFIG), key=CONF_NAME)
+    for key in rmiSelects
+}
+
 GEN_BINARYSENSORS_SCHEMA = {
     cv.Optional(key, default=key): cv.maybe_simple_value(
         binary_sensor.binary_sensor_schema(), key=CONF_NAME)
@@ -221,6 +244,8 @@ CONFIG_SCHEMA = cv.All(
     .extend(GEN_TEXTSENSORS_SCHEMA)
     .extend(GEN_RMITEXTSENSORS_SCHEMA)
     .extend(GEN_RMISENSORS_SCHEMA)
+    .extend(GEN_RMINUMBERS_SCHEMA)
+    .extend(GEN_RMISELECTS_SCHEMA)
     .extend(GEN_BINARYSENSORS_SCHEMA)
     .extend(cv.COMPONENT_SCHEMA),
     )
@@ -270,6 +295,14 @@ async def to_code(config):
     for key in rmiSensors:
         sens = await sensor.new_sensor(config[key])
         cg.add(var.register_rmiSensor(sens, key))
+
+    for key, value in rmiNumbers.items():
+        num = await number.new_number(config[key], min_value=value["min"], max_value=value["max"], step=value["step"])
+        cg.add(var.register_rmiNumber(num, key))
+
+    for key, options in rmiSelects.items():
+        sel = await select.new_select(config[key], options=options)
+        cg.add(var.register_rmiSelect(sel, key))
 
     for key, value in binarySensors.items():
         sens = await binary_sensor.new_binary_sensor(config[key])
