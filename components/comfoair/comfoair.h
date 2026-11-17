@@ -11,6 +11,7 @@
 #include "esphome/components/climate/climate_traits.h"
 #include "CanAddress.h"
 #include "commands.h"
+#include "rmi.h"
 #define amin(a,b) ((a) < (b) ? (a): (b))
 
 namespace esphome {
@@ -55,6 +56,15 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     binarySensors[PDOID] = *cs;
     this->PDOs.push_back(PDOID);
     this->PDOsMap[PDOID] = key;
+  }
+  void register_rmiTextSensor(text_sensor::TextSensor *obj, const std::string &key) {
+    for (const auto &prop : RMI_PROPERTIES) {
+      if (key == prop.key) {
+        this->rmi_reads_.push_back({&prop, obj, 0});
+        return;
+      }
+    }
+    ESP_LOGE(TAG, "RMI: %s is not in the allowed table", key.c_str());
   }
   /**
     * Send a command to the ComfoAir
@@ -111,7 +121,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
      message.rtr = 0;
 
      if (length > 8) {
-         CanAddress addr = CanAddress(0x3a, 0x1, 0, 1, 0, 1, this->sequence);
+         CanAddress addr = CanAddress(OWN_NODE_ID, COMFOAIR_NODE_ID, 0, 1, 0, 1, this->sequence);
          uint8_t dataGrams = length / 7;
          if (dataGrams * 7 == length)  {
              dataGrams--;
@@ -133,7 +143,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
          CAN0.sendFrame(message);
 
      } else {
-         CanAddress addr = CanAddress(0x3a, 0x1, 0, 0, 0, 1, this->sequence);
+         CanAddress addr = CanAddress(OWN_NODE_ID, COMFOAIR_NODE_ID, 0, 0, 0, 1, this->sequence);
          message.id = addr.canID();
          message.length = length;
          memcpy(message.data.uint8, buf, length);
@@ -151,6 +161,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
      register_service(&Comfoair::req_update_service, "req_update_service", {"PDOID"});
      register_service(&Comfoair::update_next, "update_all", {});
      this->update_next();
+     set_timeout("rmi_next", RMI_START_MS, [this](){this->rmi_next_();});
   }
 
   void update_next() {
@@ -179,7 +190,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     CAN_FRAME message;
     message.extended = true;
     message.rtr = 1;
-    message.id = (PDOID << 14) + 0x40 + 0x3a;
+    message.id = (PDOID << 14) + 0x40 + OWN_NODE_ID;
 
     message.length = 0;
     CAN0.sendFrame(message);
@@ -188,6 +199,10 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
   void loop(){
     // ESP_LOGD(TAG, "loop");
     if (CAN0.read(canMessage)) {
+        if ((canMessage.id & RMI_ID_MASK) == RMI_ID_MASK) {
+            this->handle_rmi_frame_(canMessage);
+            return;
+        }
         uint16_t PDOID = (canMessage.id & 0x01fff000) >> 14;
         uint8_t *vals = &canMessage.data.uint8[0];
         
@@ -347,6 +362,100 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
 
  private:
   CAN_FRAME canMessage;
+
+  static const uint32_t RMI_START_MS = 10000;   // after boot
+  static const uint32_t RMI_TIMEOUT_MS = 1000;
+  static const uint32_t RMI_RETRY_MS = 5000;
+  static const uint32_t RMI_GAP_MS = 100;        // between requests
+  static const uint8_t RMI_MAX_ATTEMPTS = 3;
+
+  struct RmiRead {
+    const RmiProperty *prop;
+    text_sensor::TextSensor *sensor;
+    uint8_t attempts;
+  };
+  std::vector<RmiRead> rmi_reads_;
+  size_t rmi_index_ = 0;
+  bool rmi_waiting_ = false;
+  uint8_t rmi_seq_ = 0;
+  uint8_t rmi_next_block_ = 0;
+  std::vector<uint8_t> rmi_reply_;
+
+  // Send the next read from the table, one at a time
+  void rmi_next_() {
+    if (this->rmi_index_ >= this->rmi_reads_.size()) {
+      return;
+    }
+    const RmiProperty *p = this->rmi_reads_[this->rmi_index_].prop;
+    uint8_t request[] = {RMI_GET_PROPERTY, p->unit, p->subunit, RMI_TYPE_VALUE, p->property};
+    this->rmi_reply_.clear();
+    this->rmi_next_block_ = 0;
+    this->sendRaw(sizeof(request), request);
+    this->rmi_seq_ = this->sequence;
+    this->rmi_waiting_ = true;
+    set_timeout("rmi_timeout", RMI_TIMEOUT_MS, [this]() {
+      ESP_LOGW(TAG, "RMI %s: no reply", this->rmi_reads_[this->rmi_index_].prop->key);
+      this->rmi_finish_(true);
+    });
+  }
+
+  // Retry the current read, or move on to the next
+  void rmi_finish_(bool retry) {
+    this->rmi_waiting_ = false;
+    cancel_timeout("rmi_timeout");
+    RmiRead &read = this->rmi_reads_[this->rmi_index_];
+    if (retry && ++read.attempts < RMI_MAX_ATTEMPTS) {
+      set_timeout("rmi_next", RMI_RETRY_MS, [this](){this->rmi_next_();});
+      return;
+    }
+    this->rmi_index_++;
+    set_timeout("rmi_next", RMI_GAP_MS, [this](){this->rmi_next_();});
+  }
+
+  void handle_rmi_frame_(const CAN_FRAME &frame) {
+    uint32_t id = frame.id;
+    uint8_t src = id & 0x3F;
+    uint8_t dst = (id >> 6) & 0x3F;
+    bool multi = (id >> 14) & 1;
+    bool error = (id >> 15) & 1;
+    bool request = (id >> 16) & 1;
+    uint8_t seq = (id >> 17) & 0x3;
+    // Only the unit's reply to our current request
+    if (!this->rmi_waiting_ || request || src != COMFOAIR_NODE_ID || dst != OWN_NODE_ID || seq != this->rmi_seq_) {
+      return;
+    }
+    const RmiRead &read = this->rmi_reads_[this->rmi_index_];
+    if (multi) {
+      // 7 byte blocks, each starting with its index, the last with 0x80 added
+      if (frame.length < 1 || (frame.data.uint8[0] & 0x7F) != this->rmi_next_block_) {
+        ESP_LOGW(TAG, "RMI %s: block out of order", read.prop->key);
+        this->rmi_finish_(true);
+        return;
+      }
+      this->rmi_next_block_++;
+      this->rmi_reply_.insert(this->rmi_reply_.end(), &frame.data.uint8[1], &frame.data.uint8[frame.length]);
+      if (!(frame.data.uint8[0] & 0x80)) {
+        return;
+      }
+    } else {
+      this->rmi_reply_.insert(this->rmi_reply_.end(), &frame.data.uint8[0], &frame.data.uint8[frame.length]);
+    }
+    if (error) {
+      ESP_LOGW(TAG, "RMI %s: unit error %d", read.prop->key, this->rmi_reply_.empty() ? -1 : this->rmi_reply_[0]);
+      this->rmi_finish_(false);
+      return;
+    }
+    if (this->rmi_reply_.size() != read.prop->length) {
+      ESP_LOGW(TAG, "RMI %s: reply of %u bytes, expected %u", read.prop->key,
+               (unsigned) this->rmi_reply_.size(), (unsigned) read.prop->length);
+      this->rmi_finish_(true);
+      return;
+    }
+    std::string value = read.prop->decode(this->rmi_reply_.data());
+    ESP_LOGD(TAG, "RMI %s: %s", read.prop->key, value.c_str());
+    read.sensor->publish_state(value);
+    this->rmi_finish_(false);
+  }
 
  protected:
   int rx_{-1};

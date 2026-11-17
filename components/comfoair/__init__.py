@@ -5,7 +5,7 @@ import esphome.config_validation as cv
 from esphome import pins
 from esphome.core import ID
 from esphome.util import Registry
-from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN
+from esphome.const import CONF_ID, CONF_VERSION, CONF_NAME, UNIT_PERCENT, CONF_RX_PIN, CONF_TX_PIN, ENTITY_CATEGORY_DIAGNOSTIC
 from esphome.components import text_sensor, binary_sensor, sensor, climate
 from enum import Enum
 
@@ -109,6 +109,9 @@ return vals[0] == 0 ? "auto": (vals[0] == 1 ? "cold": "warm");
 
 }
 
+# Read with RMI "get property", allowed only if also in RMI_PROPERTIES in rmi.h
+rmiTextSensors = ["hardware_version", "firmware_version"]
+
 binarySensors = {
     # summer/winter mode
     "heating_season":   {
@@ -163,6 +166,12 @@ GEN_TEXTSENSORS_SCHEMA = {
     for key, value in textSensors.items()
 }
 
+GEN_RMITEXTSENSORS_SCHEMA = {
+    cv.Optional(key, default=key): cv.maybe_simple_value(
+        text_sensor.text_sensor_schema(entity_category=ENTITY_CATEGORY_DIAGNOSTIC), key=CONF_NAME)
+    for key in rmiTextSensors
+}
+
 GEN_BINARYSENSORS_SCHEMA = {
     cv.Optional(key, default=key): cv.maybe_simple_value(
         binary_sensor.binary_sensor_schema(), key=CONF_NAME)
@@ -178,6 +187,7 @@ CONFIG_SCHEMA = cv.All(
     })
     .extend(GEN_SENSORS_SCHEMA)
     .extend(GEN_TEXTSENSORS_SCHEMA)
+    .extend(GEN_RMITEXTSENSORS_SCHEMA)
     .extend(GEN_BINARYSENSORS_SCHEMA)
     .extend(cv.COMPONENT_SCHEMA),
     )
@@ -219,6 +229,10 @@ async def to_code(config):
 }}
 ''')
         cg.add(var.register_textSensor(sens, key, value['PDO'], lamda))
+
+    for key in rmiTextSensors:
+        sens = await text_sensor.new_text_sensor(config[key])
+        cg.add(var.register_rmiTextSensor(sens, key))
 
     for key, value in binarySensors.items():
         sens = await binary_sensor.new_binary_sensor(config[key])
