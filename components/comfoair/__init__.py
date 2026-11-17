@@ -110,7 +110,32 @@ return vals[0] == 0 ? "auto": (vals[0] == 1 ? "cold": "warm");
 }
 
 # Read with RMI "get property", allowed only if also in RMI_PROPERTIES in rmi.h
-rmiTextSensors = ["hardware_version", "firmware_version"]
+DIAGNOSTIC = {"category": ENTITY_CATEGORY_DIAGNOSTIC}
+rmiTextSensors = {
+    "hardware_version": DIAGNOSTIC,
+    "firmware_version": DIAGNOSTIC,
+    "passive_temperature_control": {},
+    "passive_temperature_control_speed": {},
+    "temperature_profile_mode": {},
+    "humidity_comfort_control": {},
+    "humidity_protection": {},
+}
+rmiSensors = {
+    "rmot_heating_threshold":     {"unit": "°C", "decimals": 1},
+    "rmot_cooling_threshold":     {"unit": "°C", "decimals": 1},
+    "comfort_temperature_warm":   {"unit": "°C", "decimals": 1},
+    "comfort_temperature_normal": {"unit": "°C", "decimals": 1},
+    "comfort_temperature_cool":   {"unit": "°C", "decimals": 1},
+    "filter_warning_period":      {"unit": "days", "decimals": 0},
+    "filter_lifetime":            {"unit": "days", "decimals": 0},
+    # Commissioning, read only
+    "airflow_away":               {"unit": "m³/h", "decimals": 0, **DIAGNOSTIC},
+    "airflow_low":                {"unit": "m³/h", "decimals": 0, **DIAGNOSTIC},
+    "airflow_medium":             {"unit": "m³/h", "decimals": 0, **DIAGNOSTIC},
+    "airflow_high":               {"unit": "m³/h", "decimals": 0, **DIAGNOSTIC},
+    "bathroom_switch_on_delay":   {"unit": "s", "decimals": 0, **DIAGNOSTIC},
+    "bathroom_switch_off_delay":  {"unit": "min", "decimals": 0, **DIAGNOSTIC},
+}
 
 binarySensors = {
     # summer/winter mode
@@ -168,8 +193,15 @@ GEN_TEXTSENSORS_SCHEMA = {
 
 GEN_RMITEXTSENSORS_SCHEMA = {
     cv.Optional(key, default=key): cv.maybe_simple_value(
-        text_sensor.text_sensor_schema(entity_category=ENTITY_CATEGORY_DIAGNOSTIC), key=CONF_NAME)
-    for key in rmiTextSensors
+        text_sensor.text_sensor_schema(entity_category=value.get("category", cv.UNDEFINED)), key=CONF_NAME)
+    for key, value in rmiTextSensors.items()
+}
+
+GEN_RMISENSORS_SCHEMA = {
+    cv.Optional(key, default=key): cv.maybe_simple_value(
+        sensor.sensor_schema(unit_of_measurement=value["unit"], accuracy_decimals=value["decimals"],
+                             entity_category=value.get("category", cv.UNDEFINED)), key=CONF_NAME)
+    for key, value in rmiSensors.items()
 }
 
 GEN_BINARYSENSORS_SCHEMA = {
@@ -188,6 +220,7 @@ CONFIG_SCHEMA = cv.All(
     .extend(GEN_SENSORS_SCHEMA)
     .extend(GEN_TEXTSENSORS_SCHEMA)
     .extend(GEN_RMITEXTSENSORS_SCHEMA)
+    .extend(GEN_RMISENSORS_SCHEMA)
     .extend(GEN_BINARYSENSORS_SCHEMA)
     .extend(cv.COMPONENT_SCHEMA),
     )
@@ -233,6 +266,10 @@ async def to_code(config):
     for key in rmiTextSensors:
         sens = await text_sensor.new_text_sensor(config[key])
         cg.add(var.register_rmiTextSensor(sens, key))
+
+    for key in rmiSensors:
+        sens = await sensor.new_sensor(config[key])
+        cg.add(var.register_rmiSensor(sens, key))
 
     for key, value in binarySensors.items():
         sens = await binary_sensor.new_binary_sensor(config[key])

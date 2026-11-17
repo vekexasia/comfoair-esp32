@@ -3,6 +3,7 @@
 
 #include "esphome/components/api/custom_api_device.h"
 #include "esphome/core/component.h"
+#include "esphome/core/helpers.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
@@ -58,13 +59,16 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     this->PDOsMap[PDOID] = key;
   }
   void register_rmiTextSensor(text_sensor::TextSensor *obj, const std::string &key) {
-    for (const auto &prop : RMI_PROPERTIES) {
-      if (key == prop.key) {
-        this->rmi_reads_.push_back({&prop, obj, 0});
-        return;
-      }
+    const RmiProperty *prop = this->find_rmi_property_(key, true);
+    if (prop != nullptr) {
+      this->rmi_reads_.push_back({prop, obj, nullptr});
     }
-    ESP_LOGE(TAG, "RMI: %s is not in the allowed table", key.c_str());
+  }
+  void register_rmiSensor(sensor::Sensor *obj, const std::string &key) {
+    const RmiProperty *prop = this->find_rmi_property_(key, false);
+    if (prop != nullptr) {
+      this->rmi_reads_.push_back({prop, nullptr, obj});
+    }
   }
   /**
     * Send a command to the ComfoAir
@@ -367,12 +371,17 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
   static const uint32_t RMI_TIMEOUT_MS = 1000;
   static const uint32_t RMI_RETRY_MS = 5000;
   static const uint32_t RMI_GAP_MS = 100;        // between requests
+  static const uint32_t RMI_REFRESH_MS = 600000; // read everything again
   static const uint8_t RMI_MAX_ATTEMPTS = 3;
 
   struct RmiRead {
     const RmiProperty *prop;
-    text_sensor::TextSensor *sensor;
-    uint8_t attempts;
+    text_sensor::TextSensor *text_sensor;
+    sensor::Sensor *sensor;
+    uint8_t attempts = 0;
+    // Range and step from the unit, if read
+    bool has_limits = false;
+    float min = 0, max = 0, step = 0;
   };
   std::vector<RmiRead> rmi_reads_;
   size_t rmi_index_ = 0;
@@ -381,13 +390,38 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
   uint8_t rmi_next_block_ = 0;
   std::vector<uint8_t> rmi_reply_;
 
+  // The table entry for key, if allowed and of the right kind
+  const RmiProperty *find_rmi_property_(const std::string &key, bool text) {
+    for (const auto &prop : RMI_PROPERTIES) {
+      if (key == prop.key) {
+        if ((prop.text != nullptr) == text) {
+          return &prop;
+        }
+        break;
+      }
+    }
+    ESP_LOGE(TAG, "RMI: %s is not in the allowed table as a %s sensor", key.c_str(), text ? "text" : "number");
+    return nullptr;
+  }
+
+  static uint8_t rmi_reply_length_(const RmiProperty *p) {
+    return rmi_type_size(p->type) * (p->limits ? 4 : 1);
+  }
+
   // Send the next read from the table, one at a time
   void rmi_next_() {
     if (this->rmi_index_ >= this->rmi_reads_.size()) {
+      // All read, start again later
+      this->rmi_index_ = 0;
+      for (auto &read : this->rmi_reads_) {
+        read.attempts = 0;
+      }
+      set_timeout("rmi_next", RMI_REFRESH_MS, [this](){this->rmi_next_();});
       return;
     }
     const RmiProperty *p = this->rmi_reads_[this->rmi_index_].prop;
-    uint8_t request[] = {RMI_GET_PROPERTY, p->unit, p->subunit, RMI_TYPE_VALUE, p->property};
+    uint8_t type = RMI_TYPE_VALUE | (p->limits ? RMI_TYPE_RANGE | RMI_TYPE_STEP : 0);
+    uint8_t request[] = {RMI_GET_PROPERTY, p->unit, p->subunit, type, p->property};
     this->rmi_reply_.clear();
     this->rmi_next_block_ = 0;
     this->sendRaw(sizeof(request), request);
@@ -424,7 +458,7 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
     if (!this->rmi_waiting_ || request || src != COMFOAIR_NODE_ID || dst != OWN_NODE_ID || seq != this->rmi_seq_) {
       return;
     }
-    const RmiRead &read = this->rmi_reads_[this->rmi_index_];
+    RmiRead &read = this->rmi_reads_[this->rmi_index_];
     if (multi) {
       // 7 byte blocks, each starting with its index, the last with 0x80 added
       if (frame.length < 1 || (frame.data.uint8[0] & 0x7F) != this->rmi_next_block_) {
@@ -445,16 +479,39 @@ class Comfoair: public Component, public climate::Climate, public esphome::api::
       this->rmi_finish_(false);
       return;
     }
-    if (this->rmi_reply_.size() != read.prop->length) {
+    if (this->rmi_reply_.size() != rmi_reply_length_(read.prop)) {
       ESP_LOGW(TAG, "RMI %s: reply of %u bytes, expected %u", read.prop->key,
-               (unsigned) this->rmi_reply_.size(), (unsigned) read.prop->length);
+               (unsigned) this->rmi_reply_.size(), (unsigned) rmi_reply_length_(read.prop));
       this->rmi_finish_(true);
       return;
     }
-    std::string value = read.prop->decode(this->rmi_reply_.data());
-    ESP_LOGD(TAG, "RMI %s: %s", read.prop->key, value.c_str());
-    read.sensor->publish_state(value);
+    this->publish_rmi_(read);
     this->rmi_finish_(false);
+  }
+
+  // Reply is the value, then min, max and step if limits were asked for
+  void publish_rmi_(RmiRead &read) {
+    const RmiProperty *p = read.prop;
+    const uint8_t *data = this->rmi_reply_.data();
+    uint8_t size = rmi_type_size(p->type);
+    if (p->limits) {
+      read.has_limits = true;
+      read.min = rmi_decode_int(p->type, data + size) / p->divider;
+      read.max = rmi_decode_int(p->type, data + 2 * size) / p->divider;
+      read.step = rmi_decode_int(p->type, data + 3 * size) / p->divider;
+    }
+    float number = rmi_decode_int(p->type, data) / p->divider;
+    std::string value = p->text != nullptr ? p->text(data) : str_sprintf("%g", number);
+    if (read.has_limits) {
+      ESP_LOGD(TAG, "RMI %s: %s (range %g to %g, step %g)", p->key, value.c_str(), read.min, read.max, read.step);
+    } else {
+      ESP_LOGD(TAG, "RMI %s: %s", p->key, value.c_str());
+    }
+    if (read.text_sensor != nullptr) {
+      read.text_sensor->publish_state(value);
+    } else {
+      read.sensor->publish_state(number);
+    }
   }
 
  protected:
