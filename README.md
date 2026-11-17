@@ -140,7 +140,7 @@ comfoair:
     - throttle: 10s
 ```
 
-Obviously, you can always set the filter on a per-sensor basis.
+You can also set filters on a per-sensor basis. A sensor's own `filters` replace the `global_filters` for that sensor, so the global filters act as a default.
 
 ```yaml
 comfoair:
@@ -156,7 +156,17 @@ comfoair:
           - delta: 100.0
 ```
 
-**NOTE**: when setting `global_filters` that **does** takes precedence over the `filters` set on a per-sensor basis.
+To give a sensor no filters at all while `global_filters` is set, use an empty list.
+
+```yaml
+comfoair:
+  global_filters:
+    - throttle: 10s
+  fan_speed:
+    name: fan_speed
+    filters: []
+```
+
 ## Credits
 
 A lot of this repo was inspired by the reverse engineering [here](https://github.com/marco-hoyer/zcan/issues/1).
